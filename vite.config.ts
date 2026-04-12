@@ -6,4 +6,7 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-export default defineConfig();
+export default defineConfig({
+  // Vercel deploys on a Node runtime; Cloudflare worker output breaks preview/prod there.
+  cloudflare: false,
+});
