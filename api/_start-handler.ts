@@ -1,4 +1,5 @@
 type ServerFetch = (request: Request) => Promise<Response> | Response;
+type VercelRequestInit = RequestInit & { duplex?: "half" };
 
 let fetchPromise: Promise<ServerFetch> | null = null;
 
@@ -19,7 +20,7 @@ function normalizeVercelRequest(request: Request): Request {
     return request;
   }
 
-  const init: RequestInit = {
+  const init: VercelRequestInit = {
     method: request.method,
     headers: request.headers,
     redirect: request.redirect,
@@ -35,7 +36,10 @@ function normalizeVercelRequest(request: Request): Request {
 }
 
 async function loadServerFetch(): Promise<ServerFetch> {
-  const mod = await import("../dist/server/server.js");
+  const mod = (await import("../dist/server/server.js")) as {
+    default?: { fetch?: ServerFetch };
+    fetch?: ServerFetch;
+  };
 
   const fromDefault = (mod as { default?: { fetch?: ServerFetch } }).default?.fetch;
   if (typeof fromDefault === "function") {
