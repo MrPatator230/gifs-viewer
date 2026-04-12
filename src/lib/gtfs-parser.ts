@@ -158,10 +158,12 @@ export function getRouteTextColor(route: GtfsRoute): string {
 export function getServiceDays(
   serviceId: string,
   calendar: GtfsCalendar[],
-  _calendarDates: GtfsCalendarDate[]
+  calendarDates: GtfsCalendarDate[]
 ): Record<string, boolean> {
   const cal = calendar.find((c) => c.service_id === serviceId);
-  return {
+
+  // Base days from calendar.txt
+  const days: Record<string, boolean> = {
     Lun: cal?.monday === "1",
     Mar: cal?.tuesday === "1",
     Mer: cal?.wednesday === "1",
@@ -170,6 +172,25 @@ export function getServiceDays(
     Sam: cal?.saturday === "1",
     Dim: cal?.sunday === "1",
   };
+
+  // If no calendar entry, infer days from calendar_dates (exception_type=1 = added)
+  if (!cal) {
+    const added = calendarDates.filter(
+      (cd) => cd.service_id === serviceId && cd.exception_type === "1"
+    );
+    const dayIndexMap = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+    for (const cd of added) {
+      const d = new Date(
+        Number(cd.date.slice(0, 4)),
+        Number(cd.date.slice(4, 6)) - 1,
+        Number(cd.date.slice(6, 8))
+      );
+      const label = dayIndexMap[d.getDay()];
+      if (label) days[label] = true;
+    }
+  }
+
+  return days;
 }
 
 export function getServiceDates(

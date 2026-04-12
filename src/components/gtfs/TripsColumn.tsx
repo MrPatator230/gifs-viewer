@@ -51,10 +51,6 @@ export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip }
                 />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-foreground">
-                    <span className="font-[family-name:var(--font-mono)] text-xs text-muted-foreground">
-                      {et.trip.trip_id}
-                    </span>
-                    {" — "}
                     {et.firstStop.name}{" "}
                     <span className="text-primary">({et.firstStop.time})</span>
                     {" > "}
