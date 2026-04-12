@@ -5,8 +5,8 @@
       "destination": "/api"
     },
     {
-      "source": "/:path*",
-      "destination": "/api/:path*"
+      "source": "/((?!api/).*)",
+      "destination": "/api/$1"
     }
   ]
 }
