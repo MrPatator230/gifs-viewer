@@ -7,6 +7,11 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
-  // Vercel deploys on a Node runtime; Cloudflare worker output breaks preview/prod there.
-  cloudflare: false,
-});
+  // ... vos autres configurations
+  preview: {
+    port: 4173,
+    allowedHosts: [
+      'gtfs-viewer.mr-patator.fr'
+    ]
+  }
+})
