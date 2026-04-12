@@ -36,7 +36,10 @@ function normalizeVercelRequest(request: Request): Request {
 }
 
 async function loadServerFetch(): Promise<ServerFetch> {
-  const mod = (await import("../dist/server/server.js")) as {
+  const serverEntryPath = "../dist/server/server.js";
+  const mod = (await import(
+    /* @vite-ignore */ serverEntryPath
+  )) as {
     default?: { fetch?: ServerFetch };
     fetch?: ServerFetch;
   };
