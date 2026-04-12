@@ -1,5 +1,7 @@
+import { useState } from "react";
 import type { GtfsTrip, GtfsCalendar, GtfsCalendarDate, GtfsStopTime } from "@/lib/gtfs-parser";
-import { MapPin, Calendar } from "lucide-react";
+import { MapPin, Calendar, MessageSquare } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 interface EnrichedStopTime extends GtfsStopTime {
   stopName: string;
@@ -12,6 +14,8 @@ interface Props {
   selectedTrip: GtfsTrip | null;
   days: Record<string, boolean> | null;
   calendarInfo: { cal: GtfsCalendar | undefined; calDates: GtfsCalendarDate[] } | null;
+  comment: string;
+  onCommentChange: (comment: string) => void;
 }
 
 const DAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -21,7 +25,18 @@ function formatGtfsDate(d: string): string {
   return `${d.slice(6, 8)}/${d.slice(4, 6)}/${d.slice(0, 4)}`;
 }
 
-// Build set of active dates from calendar + calendar_dates
+function parseGtfsDate(d: string): Date | null {
+  if (!d || d.length !== 8) return null;
+  return new Date(Number(d.slice(0, 4)), Number(d.slice(4, 6)) - 1, Number(d.slice(6, 8)));
+}
+
+function toKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}${m}${day}`;
+}
+
 function getActiveDates(
   cal: GtfsCalendar | undefined,
   calDates: GtfsCalendarDate[]
@@ -60,18 +75,6 @@ function getActiveDates(
   return dates;
 }
 
-function parseGtfsDate(d: string): Date | null {
-  if (!d || d.length !== 8) return null;
-  return new Date(Number(d.slice(0, 4)), Number(d.slice(4, 6)) - 1, Number(d.slice(6, 8)));
-}
-
-function toKey(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}${m}${day}`;
-}
-
 function MiniCalendar({
   cal,
   calDates,
@@ -81,13 +84,11 @@ function MiniCalendar({
 }) {
   const activeDates = getActiveDates(cal, calDates);
 
-  // Determine month range to display
   const start = cal ? parseGtfsDate(cal.start_date) : null;
   const end = cal ? parseGtfsDate(cal.end_date) : null;
 
   if (!start || !end) return null;
 
-  // Generate months
   const months: { year: number; month: number }[] = [];
   const cur = new Date(start.getFullYear(), start.getMonth(), 1);
   const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
@@ -96,7 +97,6 @@ function MiniCalendar({
     cur.setMonth(cur.getMonth() + 1);
   }
 
-  // Limit to max 6 months for display
   const displayMonths = months.slice(0, 6);
 
   const monthNames = [
@@ -109,7 +109,6 @@ function MiniCalendar({
       {displayMonths.map(({ year, month }) => {
         const firstDay = new Date(year, month, 1);
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-        // Monday-based: 0=Mon, 6=Sun
         const startDow = (firstDay.getDay() + 6) % 7;
 
         const cells: (number | null)[] = [];
@@ -161,7 +160,9 @@ function MiniCalendar({
   );
 }
 
-export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo }: Props) {
+export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, comment, onCommentChange }: Props) {
+  const [showCalendar, setShowCalendar] = useState(false);
+
   if (!selectedTrip) {
     return (
       <div className="flex w-96 shrink-0 items-center justify-center">
@@ -176,21 +177,33 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo }:
   return (
     <div className="flex w-96 shrink-0 flex-col">
       <div className="border-b border-border p-3">
-        <h2 className="font-[family-name:var(--font-heading)] text-sm font-semibold text-foreground">
-          Détail — {selectedTrip.trip_id}
-        </h2>
-        {selectedTrip.trip_headsign && (
-          <p className="text-xs text-muted-foreground">{selectedTrip.trip_headsign}</p>
-        )}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-[family-name:var(--font-heading)] text-sm font-semibold text-foreground">
+              Détail
+              {selectedTrip.trip_short_name && ` — Train ${selectedTrip.trip_short_name}`}
+            </h2>
+            {selectedTrip.trip_headsign && (
+              <p className="text-xs text-muted-foreground">{selectedTrip.trip_headsign}</p>
+            )}
+          </div>
+          {calendarInfo && (
+            <button
+              onClick={() => setShowCalendar(!showCalendar)}
+              className={`rounded-md p-1.5 transition-colors ${
+                showCalendar ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-muted"
+              }`}
+              title="Calendrier de circulation"
+            >
+              <Calendar className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Service info */}
+      {/* Service days */}
       {days && (
         <div className="border-b border-border px-4 py-3">
-          <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
-            <Calendar className="h-3.5 w-3.5" />
-            Jours de circulation
-          </div>
           <div className="flex gap-1">
             {DAY_LABELS.map((day) => (
               <span
@@ -214,12 +227,27 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo }:
         </div>
       )}
 
-      {/* Mini calendar */}
-      {calendarInfo && (
+      {/* Calendar toggle */}
+      {showCalendar && calendarInfo && (
         <div className="border-b border-border px-4 py-3">
           <MiniCalendar cal={calendarInfo.cal} calDates={calendarInfo.calDates} />
         </div>
       )}
+
+      {/* Comment section */}
+      <div className="border-b border-border px-4 py-3">
+        <div className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <MessageSquare className="h-3.5 w-3.5" />
+          Commentaire
+        </div>
+        <Textarea
+          value={comment}
+          onChange={(e) => onCommentChange(e.target.value)}
+          placeholder="Aucun commentaire…"
+          className="min-h-[48px] resize-none bg-muted/50 text-xs"
+          rows={2}
+        />
+      </div>
 
       {/* Stop times list */}
       <div className="flex-1 overflow-y-auto">
@@ -228,7 +256,6 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo }:
             key={`${st.stop_id}-${st.stop_sequence}`}
             className="flex items-start gap-3 border-b border-border px-4 py-2.5"
           >
-            {/* Timeline dot */}
             <div className="flex flex-col items-center pt-1.5">
               <div className="h-2.5 w-2.5 rounded-full border-2 border-primary bg-background" />
               {i < stopTimes.length - 1 && (

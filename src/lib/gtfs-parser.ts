@@ -14,6 +14,7 @@ export interface GtfsTrip {
   route_id: string;
   service_id: string;
   trip_headsign: string;
+  trip_short_name: string;
   direction_id: string;
 }
 

@@ -7,8 +7,6 @@ import type {
 } from "@/lib/gtfs-parser";
 import {
   formatTime,
-  getRouteColor,
-  getRouteTextColor,
   getServiceDays,
 } from "@/lib/gtfs-parser";
 import { RoutesColumn } from "./RoutesColumn";
@@ -29,6 +27,7 @@ export interface EnrichedTrip {
 export function VisualizationStep({ data }: Props) {
   const [selectedRoute, setSelectedRoute] = useState<GtfsRoute | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<GtfsTrip | null>(null);
+  const [tripComments, setTripComments] = useState<Record<string, string>>({});
 
   // Index stops by id
   const stopsMap = useMemo(() => {
@@ -48,7 +47,6 @@ export function VisualizationStep({ data }: Props) {
       }
       arr.push(st);
     }
-    // Sort each by stop_sequence
     for (const arr of m.values()) {
       arr.sort((a, b) => Number(a.stop_sequence) - Number(b.stop_sequence));
     }
@@ -117,6 +115,11 @@ export function VisualizationStep({ data }: Props) {
     return { cal, calDates };
   }, [selectedTrip, data.calendar, data.calendarDates]);
 
+  // Initialize comment from trip_headsign if not yet set
+  const currentComment = selectedTrip
+    ? (tripComments[selectedTrip.trip_id] ?? selectedTrip.trip_headsign ?? "")
+    : "";
+
   return (
     <div className="flex h-screen flex-col bg-background">
       {/* Header */}
@@ -153,6 +156,12 @@ export function VisualizationStep({ data }: Props) {
           selectedTrip={selectedTrip}
           days={selectedTripDays}
           calendarInfo={selectedTripCalendar}
+          comment={currentComment}
+          onCommentChange={(c) => {
+            if (selectedTrip) {
+              setTripComments((prev) => ({ ...prev, [selectedTrip.trip_id]: c }));
+            }
+          }}
         />
       </div>
     </div>
