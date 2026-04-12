@@ -2,6 +2,38 @@ type ServerFetch = (request: Request) => Promise<Response> | Response;
 
 let fetchPromise: Promise<ServerFetch> | null = null;
 
+function normalizeVercelRequest(request: Request): Request {
+  const url = new URL(request.url);
+
+  if (url.pathname === "/api") {
+    url.pathname = "/";
+  } else if (url.pathname.startsWith("/api/")) {
+    url.pathname = url.pathname.slice(4);
+  }
+
+  if (url.pathname === "") {
+    url.pathname = "/";
+  }
+
+  if (url.toString() === request.url) {
+    return request;
+  }
+
+  const init: RequestInit = {
+    method: request.method,
+    headers: request.headers,
+    redirect: request.redirect,
+    signal: request.signal,
+  };
+
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    init.body = request.body;
+    init.duplex = "half";
+  }
+
+  return new Request(url, init);
+}
+
 async function loadServerFetch(): Promise<ServerFetch> {
   const mod = await import("../dist/server/server.js");
 
@@ -26,6 +58,6 @@ export async function handleStartRequest(request: Request): Promise<Response> {
   }
 
   const fetchServer = await fetchPromise;
-  return await fetchServer(request);
+  return await fetchServer(normalizeVercelRequest(request));
 }
 
