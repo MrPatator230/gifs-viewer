@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import type { GtfsRoute, GtfsTrip } from "@/lib/gtfs-parser";
 import type { EnrichedTrip } from "./VisualizationStep";
 import { getRouteColor } from "@/lib/gtfs-parser";
-import { Clock, ArrowLeftRight } from "lucide-react";
+import { Clock, ArrowLeftRight, FileDown, FileText } from "lucide-react";
+import { exportTripsCSV, exportTripsPDF } from "@/lib/gtfs-export";
 
 interface Props {
   trips: EnrichedTrip[];
