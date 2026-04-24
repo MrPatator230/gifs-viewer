@@ -154,6 +154,17 @@ export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip, 
           );
         })}
       </div>
+
+      {exportFormat && (
+        <ExportPreviewDialog
+          open={exportFormat !== null}
+          onOpenChange={(o) => !o && setExportFormat(null)}
+          format={exportFormat}
+          route={selectedRoute}
+          trips={filteredTrips}
+          meta={exportMeta}
+        />
+      )}
     </div>
   );
 }
