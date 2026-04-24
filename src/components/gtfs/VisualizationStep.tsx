@@ -72,11 +72,11 @@ export function VisualizationStep({ data }: Props) {
         return {
           trip,
           firstStop: {
-            name: stopsMap.get(first.stop_id) || first.stop_id,
+            name: stopsMap.get(first.stop_id)?.name || first.stop_id,
             time: formatTime(first.departure_time),
           },
           lastStop: {
-            name: stopsMap.get(last.stop_id) || last.stop_id,
+            name: stopsMap.get(last.stop_id)?.name || last.stop_id,
             time: formatTime(last.arrival_time),
           },
           days: getServiceDays(trip.service_id, data.calendar, data.calendarDates),
@@ -92,12 +92,17 @@ export function VisualizationStep({ data }: Props) {
   const tripStopTimes = useMemo(() => {
     if (!selectedTrip) return [];
     const sts = stopTimesByTrip.get(selectedTrip.trip_id) || [];
-    return sts.map((st) => ({
-      ...st,
-      stopName: stopsMap.get(st.stop_id) || st.stop_id,
-      arrivalFormatted: formatTime(st.arrival_time),
-      departureFormatted: formatTime(st.departure_time),
-    }));
+    return sts.map((st) => {
+      const stop = stopsMap.get(st.stop_id);
+      return {
+        ...st,
+        stopName: stop?.name || st.stop_id,
+        stop_lat: stop?.lat,
+        stop_lon: stop?.lon,
+        arrivalFormatted: formatTime(st.arrival_time),
+        departureFormatted: formatTime(st.departure_time),
+      };
+    });
   }, [selectedTrip, stopTimesByTrip, stopsMap]);
 
   // Service details for selected trip
