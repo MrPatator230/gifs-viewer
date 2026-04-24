@@ -1,23 +1,25 @@
 import { useState, useMemo } from "react";
-import type { GtfsRoute, GtfsTrip } from "@/lib/gtfs-parser";
+import type { GtfsRoute, GtfsTrip, GtfsData } from "@/lib/gtfs-parser";
 import type { EnrichedTrip } from "./VisualizationStep";
 import { getRouteColor } from "@/lib/gtfs-parser";
 import { Clock, ArrowLeftRight, FileDown, FileText } from "lucide-react";
-import { exportTripsCSV, exportTripsPDF } from "@/lib/gtfs-export";
+import { buildExportMeta } from "@/lib/gtfs-export";
+import { ExportPreviewDialog } from "./ExportPreviewDialog";
 
 interface Props {
   trips: EnrichedTrip[];
   selectedRoute: GtfsRoute | null;
   selectedTrip: GtfsTrip | null;
   onSelectTrip: (trip: GtfsTrip) => void;
+  gtfsData: GtfsData;
 }
 
 const DAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
-export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip }: Props) {
+export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip, gtfsData }: Props) {
   const [directionFilter, setDirectionFilter] = useState<string | null>(null);
+  const [exportFormat, setExportFormat] = useState<"csv" | "pdf" | null>(null);
 
-  // Get available directions
   const directions = useMemo(() => {
     const dirs = new Set(trips.map((t) => t.trip.direction_id).filter(Boolean));
     return Array.from(dirs).sort();
@@ -27,6 +29,11 @@ export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip }
     if (directionFilter === null) return trips;
     return trips.filter((t) => t.trip.direction_id === directionFilter);
   }, [trips, directionFilter]);
+
+  const exportMeta = useMemo(
+    () => buildExportMeta(gtfsData, trips, filteredTrips, directionFilter),
+    [gtfsData, trips, filteredTrips, directionFilter]
+  );
 
   if (!selectedRoute) {
     return (
@@ -50,18 +57,18 @@ export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip }
           </h2>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => exportTripsCSV(selectedRoute, filteredTrips)}
+              onClick={() => setExportFormat("csv")}
               disabled={filteredTrips.length === 0}
-              title="Exporter en CSV"
+              title={`Exporter ${filteredTrips.length} horaires en CSV`}
               className="flex items-center gap-1 rounded border border-border bg-card px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
             >
               <FileDown className="h-3 w-3" />
               CSV
             </button>
             <button
-              onClick={() => exportTripsPDF(selectedRoute, filteredTrips)}
+              onClick={() => setExportFormat("pdf")}
               disabled={filteredTrips.length === 0}
-              title="Exporter en PDF"
+              title={`Exporter ${filteredTrips.length} horaires en PDF`}
               className="flex items-center gap-1 rounded border border-border bg-card px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
             >
               <FileText className="h-3 w-3" />
@@ -147,6 +154,17 @@ export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip }
           );
         })}
       </div>
+
+      {exportFormat && (
+        <ExportPreviewDialog
+          open={exportFormat !== null}
+          onOpenChange={(o) => !o && setExportFormat(null)}
+          format={exportFormat}
+          route={selectedRoute}
+          trips={filteredTrips}
+          meta={exportMeta}
+        />
+      )}
     </div>
   );
 }

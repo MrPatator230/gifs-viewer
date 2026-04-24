@@ -1,12 +1,18 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import type { GtfsTrip, GtfsCalendar, GtfsCalendarDate, GtfsStopTime } from "@/lib/gtfs-parser";
-import { MapPin, Calendar, MessageSquare } from "lucide-react";
+import { MapPin, Calendar, MessageSquare, Map as MapIcon } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+
+const StopsMap = lazy(() =>
+  import("./StopsMap").then((m) => ({ default: m.StopsMap }))
+);
 
 interface EnrichedStopTime extends GtfsStopTime {
   stopName: string;
   arrivalFormatted: string;
   departureFormatted: string;
+  stop_lat?: string;
+  stop_lon?: string;
 }
 
 interface Props {
@@ -16,6 +22,7 @@ interface Props {
   calendarInfo: { cal: GtfsCalendar | undefined; calDates: GtfsCalendarDate[] } | null;
   comment: string;
   onCommentChange: (comment: string) => void;
+  routeColor: string;
 }
 
 const DAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -84,10 +91,28 @@ function MiniCalendar({
 }) {
   const activeDates = getActiveDates(cal, calDates);
 
-  const start = cal ? parseGtfsDate(cal.start_date) : null;
-  const end = cal ? parseGtfsDate(cal.end_date) : null;
+  let start: Date | null = cal ? parseGtfsDate(cal.start_date) : null;
+  let end: Date | null = cal ? parseGtfsDate(cal.end_date) : null;
 
-  if (!start || !end) return null;
+  // Fallback: derive bounds from calendar_dates when calendar.txt has no entry
+  if ((!start || !end) && calDates.length > 0) {
+    const sorted = [...calDates]
+      .map((cd) => cd.date)
+      .filter((d) => d && d.length === 8)
+      .sort();
+    if (sorted.length > 0) {
+      start = parseGtfsDate(sorted[0]);
+      end = parseGtfsDate(sorted[sorted.length - 1]);
+    }
+  }
+
+  if (!start || !end) {
+    return (
+      <p className="text-[10px] text-muted-foreground">
+        Aucune information de calendrier disponible.
+      </p>
+    );
+  }
 
   const months: { year: number; month: number }[] = [];
   const cur = new Date(start.getFullYear(), start.getMonth(), 1);
@@ -160,8 +185,22 @@ function MiniCalendar({
   );
 }
 
-export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, comment, onCommentChange }: Props) {
+export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, comment, onCommentChange, routeColor }: Props) {
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+
+  const mapStops = stopTimes
+    .filter((st) => st.stop_lat && st.stop_lon)
+    .map((st, i) => ({
+      id: st.stop_id,
+      name: st.stopName,
+      lat: Number(st.stop_lat),
+      lon: Number(st.stop_lon),
+      arrival: st.arrivalFormatted,
+      departure: st.departureFormatted,
+      sequence: i + 1,
+    }))
+    .filter((s) => !isNaN(s.lat) && !isNaN(s.lon));
 
   if (!selectedTrip) {
     return (
@@ -174,30 +213,46 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
     );
   }
 
+  const hasCalendarData =
+    !!calendarInfo && (!!calendarInfo.cal || calendarInfo.calDates.length > 0);
+
   return (
     <div className="flex w-96 shrink-0 flex-col">
       <div className="border-b border-border p-3">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
             <h2 className="font-[family-name:var(--font-heading)] text-sm font-semibold text-foreground">
               Détail
               {selectedTrip.trip_short_name && ` — Train ${selectedTrip.trip_short_name}`}
             </h2>
             {selectedTrip.trip_headsign && (
-              <p className="text-xs text-muted-foreground">{selectedTrip.trip_headsign}</p>
+              <p className="truncate text-xs text-muted-foreground">{selectedTrip.trip_headsign}</p>
             )}
           </div>
-          {calendarInfo && (
-            <button
-              onClick={() => setShowCalendar(!showCalendar)}
-              className={`rounded-md p-1.5 transition-colors ${
-                showCalendar ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-muted"
-              }`}
-              title="Calendrier de circulation"
-            >
-              <Calendar className="h-4 w-4" />
-            </button>
-          )}
+          <div className="flex items-center gap-1">
+            {mapStops.length > 0 && (
+              <button
+                onClick={() => setShowMap(!showMap)}
+                className={`rounded-md p-1.5 transition-colors ${
+                  showMap ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-muted"
+                }`}
+                title="Carte des arrêts"
+              >
+                <MapIcon className="h-4 w-4" />
+              </button>
+            )}
+            {hasCalendarData && (
+              <button
+                onClick={() => setShowCalendar(!showCalendar)}
+                className={`rounded-md p-1.5 transition-colors ${
+                  showCalendar ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-muted"
+                }`}
+                title="Calendrier de circulation"
+              >
+                <Calendar className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -231,6 +286,21 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
       {showCalendar && calendarInfo && (
         <div className="border-b border-border px-4 py-3">
           <MiniCalendar cal={calendarInfo.cal} calDates={calendarInfo.calDates} />
+        </div>
+      )}
+
+      {/* Map toggle */}
+      {showMap && mapStops.length > 0 && (
+        <div className="border-b border-border px-3 py-3">
+          <Suspense
+            fallback={
+              <div className="flex h-64 items-center justify-center rounded-md border border-border bg-muted/30 text-xs text-muted-foreground">
+                Chargement de la carte…
+              </div>
+            }
+          >
+            <StopsMap stops={mapStops} routeColor={routeColor} />
+          </Suspense>
         </div>
       )}
 

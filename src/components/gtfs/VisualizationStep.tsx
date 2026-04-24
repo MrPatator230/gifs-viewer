@@ -8,6 +8,8 @@ import type {
 import {
   formatTime,
   getServiceDays,
+  getTripComment,
+  getRouteColor,
 } from "@/lib/gtfs-parser";
 import { RoutesColumn } from "./RoutesColumn";
 import { TripsColumn } from "./TripsColumn";
@@ -29,10 +31,11 @@ export function VisualizationStep({ data }: Props) {
   const [selectedTrip, setSelectedTrip] = useState<GtfsTrip | null>(null);
   const [tripComments, setTripComments] = useState<Record<string, string>>({});
 
-  // Index stops by id
+  // Index stops by id (full stop record)
   const stopsMap = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const s of data.stops) m.set(s.stop_id, s.stop_name);
+    const m = new Map<string, { name: string; lat?: string; lon?: string }>();
+    for (const s of data.stops)
+      m.set(s.stop_id, { name: s.stop_name, lat: s.stop_lat, lon: s.stop_lon });
     return m;
   }, [data.stops]);
 
@@ -69,11 +72,11 @@ export function VisualizationStep({ data }: Props) {
         return {
           trip,
           firstStop: {
-            name: stopsMap.get(first.stop_id) || first.stop_id,
+            name: stopsMap.get(first.stop_id)?.name || first.stop_id,
             time: formatTime(first.departure_time),
           },
           lastStop: {
-            name: stopsMap.get(last.stop_id) || last.stop_id,
+            name: stopsMap.get(last.stop_id)?.name || last.stop_id,
             time: formatTime(last.arrival_time),
           },
           days: getServiceDays(trip.service_id, data.calendar, data.calendarDates),
@@ -89,12 +92,17 @@ export function VisualizationStep({ data }: Props) {
   const tripStopTimes = useMemo(() => {
     if (!selectedTrip) return [];
     const sts = stopTimesByTrip.get(selectedTrip.trip_id) || [];
-    return sts.map((st) => ({
-      ...st,
-      stopName: stopsMap.get(st.stop_id) || st.stop_id,
-      arrivalFormatted: formatTime(st.arrival_time),
-      departureFormatted: formatTime(st.departure_time),
-    }));
+    return sts.map((st) => {
+      const stop = stopsMap.get(st.stop_id);
+      return {
+        ...st,
+        stopName: stop?.name || st.stop_id,
+        stop_lat: stop?.lat,
+        stop_lon: stop?.lon,
+        arrivalFormatted: formatTime(st.arrival_time),
+        departureFormatted: formatTime(st.departure_time),
+      };
+    });
   }, [selectedTrip, stopTimesByTrip, stopsMap]);
 
   // Service details for selected trip
@@ -115,10 +123,12 @@ export function VisualizationStep({ data }: Props) {
     return { cal, calDates };
   }, [selectedTrip, data.calendar, data.calendarDates]);
 
-  // Initialize comment from trip_headsign if not yet set
+  // Initialize comment from GTFS trip_desc / trip_note if not edited yet
   const currentComment = selectedTrip
-    ? (tripComments[selectedTrip.trip_id] ?? selectedTrip.trip_headsign ?? "")
+    ? (tripComments[selectedTrip.trip_id] ?? getTripComment(selectedTrip))
     : "";
+
+  const selectedRouteColor = selectedRoute ? getRouteColor(selectedRoute) : "#3b82f6";
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -150,6 +160,7 @@ export function VisualizationStep({ data }: Props) {
           selectedRoute={selectedRoute}
           selectedTrip={selectedTrip}
           onSelectTrip={setSelectedTrip}
+          gtfsData={data}
         />
         <StopTimesColumn
           stopTimes={tripStopTimes}
@@ -157,6 +168,7 @@ export function VisualizationStep({ data }: Props) {
           days={selectedTripDays}
           calendarInfo={selectedTripCalendar}
           comment={currentComment}
+          routeColor={selectedRouteColor}
           onCommentChange={(c) => {
             if (selectedTrip) {
               setTripComments((prev) => ({ ...prev, [selectedTrip.trip_id]: c }));

@@ -16,6 +16,17 @@ export interface GtfsTrip {
   trip_headsign: string;
   trip_short_name: string;
   direction_id: string;
+  trip_desc?: string;
+  trip_note?: string;
+}
+
+export interface GtfsFeedInfo {
+  feed_publisher_name?: string;
+  feed_publisher_url?: string;
+  feed_lang?: string;
+  feed_start_date?: string;
+  feed_end_date?: string;
+  feed_version?: string;
 }
 
 export interface GtfsStopTime {
@@ -70,6 +81,8 @@ export interface GtfsData {
   stops: GtfsStop[];
   calendar: GtfsCalendar[];
   calendarDates: GtfsCalendarDate[];
+  feedInfo: GtfsFeedInfo | null;
+  fileName: string;
 }
 
 function parseCSV<T>(content: string): T[] {
@@ -111,7 +124,7 @@ export async function parseGtfsZip(file: File): Promise<GtfsData> {
     return entry.async("string");
   }
 
-  const [routesCSV, tripsCSV, stopTimesCSV, stopsCSV, calendarCSV, calDatesCSV] =
+  const [routesCSV, tripsCSV, stopTimesCSV, stopsCSV, calendarCSV, calDatesCSV, feedCSV] =
     await Promise.all([
       read("routes.txt"),
       read("trips.txt"),
@@ -119,7 +132,10 @@ export async function parseGtfsZip(file: File): Promise<GtfsData> {
       read("stops.txt"),
       read("calendar.txt"),
       read("calendar_dates.txt"),
+      read("feed_info.txt"),
     ]);
+
+  const feedRows = feedCSV ? parseCSV<GtfsFeedInfo>(feedCSV) : [];
 
   return {
     routes: routesCSV ? parseCSV<GtfsRoute>(routesCSV) : [],
@@ -128,6 +144,8 @@ export async function parseGtfsZip(file: File): Promise<GtfsData> {
     stops: stopsCSV ? parseCSV<GtfsStop>(stopsCSV) : [],
     calendar: calendarCSV ? parseCSV<GtfsCalendar>(calendarCSV) : [],
     calendarDates: calDatesCSV ? parseCSV<GtfsCalendarDate>(calDatesCSV) : [],
+    feedInfo: feedRows[0] ?? null,
+    fileName: file.name,
   };
 }
 
@@ -154,6 +172,14 @@ export function getRouteTextColor(route: GtfsRoute): string {
     return `#${c}`;
   }
   return "#ffffff";
+}
+
+export function getTripComment(trip: GtfsTrip): string {
+  return (
+    (trip.trip_desc && trip.trip_desc.trim()) ||
+    (trip.trip_note && trip.trip_note.trim()) ||
+    ""
+  );
 }
 
 export function getServiceDays(
