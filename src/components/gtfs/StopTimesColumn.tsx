@@ -84,10 +84,28 @@ function MiniCalendar({
 }) {
   const activeDates = getActiveDates(cal, calDates);
 
-  const start = cal ? parseGtfsDate(cal.start_date) : null;
-  const end = cal ? parseGtfsDate(cal.end_date) : null;
+  let start: Date | null = cal ? parseGtfsDate(cal.start_date) : null;
+  let end: Date | null = cal ? parseGtfsDate(cal.end_date) : null;
 
-  if (!start || !end) return null;
+  // Fallback: derive bounds from calendar_dates when calendar.txt has no entry
+  if ((!start || !end) && calDates.length > 0) {
+    const sorted = [...calDates]
+      .map((cd) => cd.date)
+      .filter((d) => d && d.length === 8)
+      .sort();
+    if (sorted.length > 0) {
+      start = parseGtfsDate(sorted[0]);
+      end = parseGtfsDate(sorted[sorted.length - 1]);
+    }
+  }
+
+  if (!start || !end) {
+    return (
+      <p className="text-[10px] text-muted-foreground">
+        Aucune information de calendrier disponible.
+      </p>
+    );
+  }
 
   const months: { year: number; month: number }[] = [];
   const cur = new Date(start.getFullYear(), start.getMonth(), 1);
