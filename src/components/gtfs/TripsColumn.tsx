@@ -44,9 +44,31 @@ export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip }
   return (
     <div className="flex flex-1 flex-col border-r border-border">
       <div className="border-b border-border p-3">
-        <h2 className="font-[family-name:var(--font-heading)] text-sm font-semibold text-foreground">
-          Horaires — {selectedRoute.route_short_name} ({filteredTrips.length})
-        </h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-[family-name:var(--font-heading)] text-sm font-semibold text-foreground">
+            Horaires — {selectedRoute.route_short_name} ({filteredTrips.length})
+          </h2>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => exportTripsCSV(selectedRoute, filteredTrips)}
+              disabled={filteredTrips.length === 0}
+              title="Exporter en CSV"
+              className="flex items-center gap-1 rounded border border-border bg-card px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+            >
+              <FileDown className="h-3 w-3" />
+              CSV
+            </button>
+            <button
+              onClick={() => exportTripsPDF(selectedRoute, filteredTrips)}
+              disabled={filteredTrips.length === 0}
+              title="Exporter en PDF"
+              className="flex items-center gap-1 rounded border border-border bg-card px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+            >
+              <FileText className="h-3 w-3" />
+              PDF
+            </button>
+          </div>
+        </div>
         {directions.length > 1 && (
           <div className="mt-2 flex items-center gap-1.5">
             <ArrowLeftRight className="h-3.5 w-3.5 text-muted-foreground" />
