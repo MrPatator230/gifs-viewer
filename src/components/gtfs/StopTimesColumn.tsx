@@ -11,6 +11,8 @@ interface EnrichedStopTime extends GtfsStopTime {
   stopName: string;
   arrivalFormatted: string;
   departureFormatted: string;
+  stop_lat?: string;
+  stop_lon?: string;
 }
 
 interface Props {
@@ -20,6 +22,7 @@ interface Props {
   calendarInfo: { cal: GtfsCalendar | undefined; calDates: GtfsCalendarDate[] } | null;
   comment: string;
   onCommentChange: (comment: string) => void;
+  routeColor: string;
 }
 
 const DAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
