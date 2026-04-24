@@ -81,6 +81,8 @@ export interface GtfsData {
   stops: GtfsStop[];
   calendar: GtfsCalendar[];
   calendarDates: GtfsCalendarDate[];
+  feedInfo: GtfsFeedInfo | null;
+  fileName: string;
 }
 
 function parseCSV<T>(content: string): T[] {
