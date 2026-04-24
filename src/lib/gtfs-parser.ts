@@ -16,6 +16,17 @@ export interface GtfsTrip {
   trip_headsign: string;
   trip_short_name: string;
   direction_id: string;
+  trip_desc?: string;
+  trip_note?: string;
+}
+
+export interface GtfsFeedInfo {
+  feed_publisher_name?: string;
+  feed_publisher_url?: string;
+  feed_lang?: string;
+  feed_start_date?: string;
+  feed_end_date?: string;
+  feed_version?: string;
 }
 
 export interface GtfsStopTime {
