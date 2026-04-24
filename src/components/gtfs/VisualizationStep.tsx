@@ -31,10 +31,11 @@ export function VisualizationStep({ data }: Props) {
   const [selectedTrip, setSelectedTrip] = useState<GtfsTrip | null>(null);
   const [tripComments, setTripComments] = useState<Record<string, string>>({});
 
-  // Index stops by id
+  // Index stops by id (full stop record)
   const stopsMap = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const s of data.stops) m.set(s.stop_id, s.stop_name);
+    const m = new Map<string, { name: string; lat?: string; lon?: string }>();
+    for (const s of data.stops)
+      m.set(s.stop_id, { name: s.stop_name, lat: s.stop_lat, lon: s.stop_lon });
     return m;
   }, [data.stops]);
 
