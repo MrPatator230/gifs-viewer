@@ -8,6 +8,8 @@ import type {
 import {
   formatTime,
   getServiceDays,
+  getTripComment,
+  getRouteColor,
 } from "@/lib/gtfs-parser";
 import { RoutesColumn } from "./RoutesColumn";
 import { TripsColumn } from "./TripsColumn";
