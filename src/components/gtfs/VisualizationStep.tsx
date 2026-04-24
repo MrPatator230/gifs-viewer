@@ -123,10 +123,12 @@ export function VisualizationStep({ data }: Props) {
     return { cal, calDates };
   }, [selectedTrip, data.calendar, data.calendarDates]);
 
-  // Initialize comment from trip_headsign if not yet set
+  // Initialize comment from GTFS trip_desc / trip_note if not edited yet
   const currentComment = selectedTrip
-    ? (tripComments[selectedTrip.trip_id] ?? selectedTrip.trip_headsign ?? "")
+    ? (tripComments[selectedTrip.trip_id] ?? getTripComment(selectedTrip))
     : "";
+
+  const selectedRouteColor = selectedRoute ? getRouteColor(selectedRoute) : "#3b82f6";
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -158,6 +160,7 @@ export function VisualizationStep({ data }: Props) {
           selectedRoute={selectedRoute}
           selectedTrip={selectedTrip}
           onSelectTrip={setSelectedTrip}
+          gtfsData={data}
         />
         <StopTimesColumn
           stopTimes={tripStopTimes}
@@ -165,6 +168,7 @@ export function VisualizationStep({ data }: Props) {
           days={selectedTripDays}
           calendarInfo={selectedTripCalendar}
           comment={currentComment}
+          routeColor={selectedRouteColor}
           onCommentChange={(c) => {
             if (selectedTrip) {
               setTripComments((prev) => ({ ...prev, [selectedTrip.trip_id]: c }));
