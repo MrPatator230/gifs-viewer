@@ -289,6 +289,21 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
         </div>
       )}
 
+      {/* Map toggle */}
+      {showMap && mapStops.length > 0 && (
+        <div className="border-b border-border px-3 py-3">
+          <Suspense
+            fallback={
+              <div className="flex h-64 items-center justify-center rounded-md border border-border bg-muted/30 text-xs text-muted-foreground">
+                Chargement de la carte…
+              </div>
+            }
+          >
+            <StopsMap stops={mapStops} routeColor={routeColor} />
+          </Suspense>
+        </div>
+      )}
+
       {/* Comment section */}
       <div className="border-b border-border px-4 py-3">
         <div className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
