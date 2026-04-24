@@ -171,6 +171,7 @@ export function getRouteTextColor(route: GtfsRoute): string {
     const c = route.route_text_color.replace("#", "");
     return `#${c}`;
   }
+  return "#ffffff";
 }
 
 export function getTripComment(trip: GtfsTrip): string {
