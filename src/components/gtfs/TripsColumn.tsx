@@ -207,6 +207,43 @@ export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip, 
             ))}
           </div>
         )}
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+          {DAY_LABELS.map((day) => {
+            const active = dayFilters.has(day);
+            return (
+              <button
+                key={day}
+                onClick={() => toggleDay(day)}
+                className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                  active
+                    ? "bg-primary/20 text-primary"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+              >
+                {day}
+              </button>
+            );
+          })}
+          <button
+            onClick={() => toggleDay(HOLIDAY_KEY)}
+            className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+              dayFilters.has(HOLIDAY_KEY)
+                ? "bg-primary/20 text-primary"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            }`}
+          >
+            Jours Fériés
+          </button>
+          {dayFilters.size > 0 && (
+            <button
+              onClick={() => setDayFilters(new Set())}
+              className="ml-1 rounded px-2 py-0.5 text-[10px] font-medium text-muted-foreground hover:text-foreground"
+            >
+              Réinitialiser
+            </button>
+          )}
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto">
         {filteredTrips.map((et) => {
