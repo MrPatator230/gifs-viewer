@@ -175,11 +175,13 @@ export function getRouteTextColor(route: GtfsRoute): string {
 }
 
 export function getTripComment(trip: GtfsTrip): string {
-  return (
-    (trip.trip_desc && trip.trip_desc.trim()) ||
-    (trip.trip_note && trip.trip_note.trim()) ||
-    ""
-  );
+  const desc = trip.trip_desc?.trim();
+  if (desc) return desc;
+  const note = trip.trip_note?.trim();
+  if (note) return note;
+  const headsign = trip.trip_headsign?.trim();
+  if (headsign) return headsign;
+  return "";
 }
 
 export function getServiceDays(
