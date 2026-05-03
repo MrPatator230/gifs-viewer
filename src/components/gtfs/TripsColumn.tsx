@@ -303,6 +303,8 @@ export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip, 
           route={selectedRoute}
           trips={filteredTrips}
           meta={exportMeta}
+          gtfsData={gtfsData}
+          holidayServices={holidayServices}
         />
       )}
     </div>
