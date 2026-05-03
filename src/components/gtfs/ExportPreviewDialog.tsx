@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Loader2, Download } from "lucide-react";
-import type { GtfsRoute } from "@/lib/gtfs-parser";
+import type { GtfsRoute, GtfsData } from "@/lib/gtfs-parser";
 import type { EnrichedTrip } from "./VisualizationStep";
 import {
   EXPORT_HEADERS,
@@ -20,11 +20,13 @@ interface Props {
   route: GtfsRoute;
   trips: EnrichedTrip[];
   meta: ExportMeta;
+  gtfsData: GtfsData;
+  holidayServices: Set<string>;
 }
 
 const PREVIEW_ROWS = 50;
 
-export function ExportPreviewDialog({ open, onOpenChange, format, route, trips, meta }: Props) {
+export function ExportPreviewDialog({ open, onOpenChange, format, route, trips, meta, gtfsData, holidayServices }: Props) {
   const [busy, setBusy] = useState(false);
   const rows = buildExportRows(trips);
   const previewRows = rows.slice(0, PREVIEW_ROWS);
@@ -38,7 +40,7 @@ export function ExportPreviewDialog({ open, onOpenChange, format, route, trips, 
       if (format === "csv") {
         await exportTripsCSV(route, trips, meta);
       } else {
-        await exportTripsPDF(route, trips, meta);
+        await exportTripsPDF(route, trips, meta, gtfsData, holidayServices);
       }
       toast.success(
         `Export ${format.toUpperCase()} réussi — ${trips.length} horaires`,
