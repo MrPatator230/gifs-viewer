@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import type { GtfsRoute, GtfsTrip, GtfsData } from "@/lib/gtfs-parser";
 import type { EnrichedTrip } from "./VisualizationStep";
 import { getRouteColor } from "@/lib/gtfs-parser";
-import { Clock, ArrowLeftRight, FileDown, FileText } from "lucide-react";
+import { Clock, ArrowLeftRight, FileDown, FileText, CalendarDays } from "lucide-react";
 import { buildExportMeta } from "@/lib/gtfs-export";
 import { ExportPreviewDialog } from "./ExportPreviewDialog";
 
@@ -15,9 +15,53 @@ interface Props {
 }
 
 const DAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+const HOLIDAY_KEY = "Fériés";
+
+function easterSunday(year: number): Date {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
+}
+
+function fmtDate(d: Date): string {
+  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function frenchHolidays(year: number): Set<string> {
+  const easter = easterSunday(year);
+  const easterMonday = new Date(easter); easterMonday.setDate(easter.getDate() + 1);
+  const ascension = new Date(easter); ascension.setDate(easter.getDate() + 39);
+  const pentecostMonday = new Date(easter); pentecostMonday.setDate(easter.getDate() + 50);
+  return new Set([
+    fmtDate(new Date(year, 0, 1)),
+    fmtDate(easterMonday),
+    fmtDate(new Date(year, 4, 1)),
+    fmtDate(new Date(year, 4, 8)),
+    fmtDate(ascension),
+    fmtDate(pentecostMonday),
+    fmtDate(new Date(year, 6, 14)),
+    fmtDate(new Date(year, 7, 15)),
+    fmtDate(new Date(year, 10, 1)),
+    fmtDate(new Date(year, 10, 11)),
+    fmtDate(new Date(year, 11, 25)),
+  ]);
+}
 
 export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip, gtfsData }: Props) {
   const [directionFilter, setDirectionFilter] = useState<string | null>(null);
+  const [dayFilters, setDayFilters] = useState<Set<string>>(new Set());
   const [exportFormat, setExportFormat] = useState<"csv" | "pdf" | null>(null);
 
   const directions = useMemo(() => {
@@ -25,10 +69,69 @@ export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip, 
     return Array.from(dirs).sort();
   }, [trips]);
 
+  const holidayServices = useMemo(() => {
+    const years = new Set<number>();
+    for (const cd of gtfsData.calendarDates) {
+      if (cd.date?.length === 8) years.add(Number(cd.date.slice(0, 4)));
+    }
+    for (const c of gtfsData.calendar) {
+      if (c.start_date?.length === 8) years.add(Number(c.start_date.slice(0, 4)));
+      if (c.end_date?.length === 8) years.add(Number(c.end_date.slice(0, 4)));
+    }
+    const holidays = new Set<string>();
+    for (const y of years) for (const h of frenchHolidays(y)) holidays.add(h);
+
+    const result = new Set<string>();
+    for (const cd of gtfsData.calendarDates) {
+      if (cd.exception_type === "1" && holidays.has(cd.date)) result.add(cd.service_id);
+    }
+    const removedByService = new Map<string, Set<string>>();
+    for (const cd of gtfsData.calendarDates) {
+      if (cd.exception_type === "2") {
+        let s = removedByService.get(cd.service_id);
+        if (!s) { s = new Set(); removedByService.set(cd.service_id, s); }
+        s.add(cd.date);
+      }
+    }
+    for (const c of gtfsData.calendar) {
+      if (result.has(c.service_id)) continue;
+      const dayActive = [c.sunday, c.monday, c.tuesday, c.wednesday, c.thursday, c.friday, c.saturday].map((v) => v === "1");
+      const removed = removedByService.get(c.service_id);
+      for (const h of holidays) {
+        if (h < c.start_date || h > c.end_date) continue;
+        if (removed?.has(h)) continue;
+        const d = new Date(Number(h.slice(0, 4)), Number(h.slice(4, 6)) - 1, Number(h.slice(6, 8)));
+        if (dayActive[d.getDay()]) { result.add(c.service_id); break; }
+      }
+    }
+    return result;
+  }, [gtfsData.calendar, gtfsData.calendarDates]);
+
   const filteredTrips = useMemo(() => {
-    if (directionFilter === null) return trips;
-    return trips.filter((t) => t.trip.direction_id === directionFilter);
-  }, [trips, directionFilter]);
+    let r = trips;
+    if (directionFilter !== null) r = r.filter((t) => t.trip.direction_id === directionFilter);
+    if (dayFilters.size > 0) {
+      r = r.filter((et) => {
+        for (const f of dayFilters) {
+          if (f === HOLIDAY_KEY) {
+            if (holidayServices.has(et.trip.service_id)) return true;
+          } else if (et.days[f]) {
+            return true;
+          }
+        }
+        return false;
+      });
+    }
+    return r;
+  }, [trips, directionFilter, dayFilters, holidayServices]);
+
+  const toggleDay = (d: string) => {
+    setDayFilters((prev) => {
+      const n = new Set(prev);
+      if (n.has(d)) n.delete(d); else n.add(d);
+      return n;
+    });
+  };
 
   const exportMeta = useMemo(
     () => buildExportMeta(gtfsData, trips, filteredTrips, directionFilter),
