@@ -243,6 +243,17 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
             )}
           </div>
           <div className="flex items-center gap-1">
+            {hasPlatforms && (
+              <button
+                onClick={() => setShowPlatforms(!showPlatforms)}
+                className={`rounded-md p-1.5 transition-colors ${
+                  showPlatforms ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-muted"
+                }`}
+                title="Attribution des voies"
+              >
+                <Train className="h-4 w-4" />
+              </button>
+            )}
             {mapStops.length > 0 && (
               <button
                 onClick={() => setShowMap(!showMap)}
