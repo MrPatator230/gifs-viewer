@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { GtfsRoute, GtfsData, GtfsCalendar } from "./gtfs-parser";
+import { getStopPlatform } from "./gtfs-parser";
 import type { EnrichedTrip } from "@/components/gtfs/VisualizationStep";
 
 export const DAY_KEYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -265,7 +266,7 @@ export async function exportTripsPDF(
         stop?.stop_name || st.stop_id,
         arr,
         dep,
-        st.platform || stop?.platform_code || "",
+        getStopPlatform(st, stop),
       ];
     });
 

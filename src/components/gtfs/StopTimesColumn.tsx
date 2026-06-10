@@ -1,6 +1,7 @@
 import { useState, lazy, Suspense } from "react";
 import type { GtfsTrip, GtfsCalendar, GtfsCalendarDate, GtfsStopTime } from "@/lib/gtfs-parser";
-import { MapPin, Calendar, MessageSquare, Map as MapIcon } from "lucide-react";
+import { getStopPlatform } from "@/lib/gtfs-parser";
+import { MapPin, Calendar, MessageSquare, Map as MapIcon, Train } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
 const StopsMap = lazy(() =>
@@ -13,6 +14,7 @@ interface EnrichedStopTime extends GtfsStopTime {
   departureFormatted: string;
   stop_lat?: string;
   stop_lon?: string;
+  stop_platform_code?: string;
 }
 
 interface Props {
@@ -188,6 +190,8 @@ function MiniCalendar({
 export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, comment, onCommentChange, routeColor }: Props) {
   const [showCalendar, setShowCalendar] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [showPlatforms, setShowPlatforms] = useState(false);
+
 
   const mapStops = stopTimes
     .filter((st) => st.stop_lat && st.stop_lon)
@@ -216,6 +220,17 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
   const hasCalendarData =
     !!calendarInfo && (!!calendarInfo.cal || calendarInfo.calDates.length > 0);
 
+  const platformAssignments = stopTimes
+    .map((st, i) => ({
+      seq: i + 1,
+      stopName: st.stopName,
+      platform: getStopPlatform(st, { platform_code: st.stop_platform_code }),
+      time: st.arrivalFormatted || st.departureFormatted,
+    }))
+    .filter((p) => p.platform);
+  const hasPlatforms = platformAssignments.length > 0;
+
+
   return (
     <div className="flex w-96 shrink-0 flex-col">
       <div className="border-b border-border p-3">
@@ -230,6 +245,17 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
             )}
           </div>
           <div className="flex items-center gap-1">
+            {hasPlatforms && (
+              <button
+                onClick={() => setShowPlatforms(!showPlatforms)}
+                className={`rounded-md p-1.5 transition-colors ${
+                  showPlatforms ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-muted"
+                }`}
+                title="Attribution des voies"
+              >
+                <Train className="h-4 w-4" />
+              </button>
+            )}
             {mapStops.length > 0 && (
               <button
                 onClick={() => setShowMap(!showMap)}
@@ -289,6 +315,43 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
         </div>
       )}
 
+      {/* Platforms toggle */}
+      {showPlatforms && hasPlatforms && (
+        <div className="border-b border-border px-4 py-3">
+          <div className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Train className="h-3.5 w-3.5" />
+            Attribution théorique des voies
+          </div>
+          <div className="space-y-1">
+            {platformAssignments.map((p) => (
+              <div
+                key={`${p.seq}-${p.stopName}`}
+                className="flex items-center gap-2 rounded-md bg-muted/40 px-2 py-1.5"
+              >
+                <span className="w-6 shrink-0 font-[family-name:var(--font-mono)] text-[10px] text-muted-foreground">
+                  #{String(p.seq).padStart(2, "0")}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-xs text-foreground">
+                  {p.stopName}
+                </span>
+                <span className="shrink-0 font-[family-name:var(--font-mono)] text-[10px] text-muted-foreground">
+                  {p.time}
+                </span>
+                <span
+                  className="shrink-0 rounded px-2 py-0.5 text-xs font-bold text-white"
+                  style={{ backgroundColor: routeColor }}
+                >
+                  Voie {p.platform}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            {platformAssignments.length} arrêt{platformAssignments.length > 1 ? "s" : ""} avec voie assignée sur {stopTimes.length}
+          </p>
+        </div>
+      )}
+
       {/* Map toggle */}
       {showMap && mapStops.length > 0 && (
         <div className="border-b border-border px-3 py-3">
@@ -321,41 +384,51 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
 
       {/* Stop times list */}
       <div className="flex-1 overflow-y-auto">
-        {stopTimes.map((st, i) => (
-          <div
-            key={`${st.stop_id}-${st.stop_sequence}`}
-            className="flex items-start gap-3 border-b border-border px-4 py-2.5"
-          >
-            <div className="flex flex-col items-center pt-1.5">
-              <div className="h-2.5 w-2.5 rounded-full border-2 border-primary bg-background" />
-              {i < stopTimes.length - 1 && (
-                <div className="mt-0.5 h-6 w-px bg-border" />
-              )}
+        {stopTimes.map((st, i) => {
+          const platform = getStopPlatform(st, { platform_code: st.stop_platform_code });
+          return (
+            <div
+              key={`${st.stop_id}-${st.stop_sequence}`}
+              className="flex items-start gap-3 border-b border-border px-4 py-2.5"
+            >
+              <div className="flex flex-col items-center pt-1.5">
+                <div className="h-2.5 w-2.5 rounded-full border-2 border-primary bg-background" />
+                {i < stopTimes.length - 1 && (
+                  <div className="mt-0.5 h-6 w-px bg-border" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="min-w-0 flex-1 text-sm text-foreground">
+                    {st.stopName}{" "}
+                    <span className="text-primary">
+                      ({st.arrivalFormatted}
+                      {st.arrivalFormatted !== st.departureFormatted
+                        ? ` - ${st.departureFormatted}`
+                        : ""}
+                      )
+                    </span>
+                  </p>
+                  {platform && (
+                    <span
+                      className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-white"
+                      style={{ backgroundColor: routeColor }}
+                      title="Voie théorique"
+                    >
+                      V.{platform}
+                    </span>
+                  )}
+                </div>
+                {st.stop_headsign && (
+                  <p className="text-xs text-muted-foreground">{st.stop_headsign}</p>
+                )}
+              </div>
+              <span className="shrink-0 font-[family-name:var(--font-mono)] text-xs text-muted-foreground">
+                #{String(i + 1).padStart(2, "0")}
+              </span>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm text-foreground">
-                {st.stopName}{" "}
-                <span className="text-primary">
-                  ({st.arrivalFormatted}
-                  {st.arrivalFormatted !== st.departureFormatted
-                    ? ` - ${st.departureFormatted}`
-                    : ""}
-                  )
-                </span>
-              </p>
-              {(st.platform || st.stop_headsign) && (
-                <p className="text-xs text-muted-foreground">
-                  {st.platform && `Voie ${st.platform}`}
-                  {st.platform && st.stop_headsign && " · "}
-                  {st.stop_headsign}
-                </p>
-              )}
-            </div>
-            <span className="shrink-0 font-[family-name:var(--font-mono)] text-xs text-muted-foreground">
-              #{String(i + 1).padStart(2, "0")}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

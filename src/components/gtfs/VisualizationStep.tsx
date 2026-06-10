@@ -33,9 +33,9 @@ export function VisualizationStep({ data }: Props) {
 
   // Index stops by id (full stop record)
   const stopsMap = useMemo(() => {
-    const m = new Map<string, { name: string; lat?: string; lon?: string }>();
+    const m = new Map<string, { name: string; lat?: string; lon?: string; platform_code?: string }>();
     for (const s of data.stops)
-      m.set(s.stop_id, { name: s.stop_name, lat: s.stop_lat, lon: s.stop_lon });
+      m.set(s.stop_id, { name: s.stop_name, lat: s.stop_lat, lon: s.stop_lon, platform_code: s.platform_code });
     return m;
   }, [data.stops]);
 
@@ -99,6 +99,7 @@ export function VisualizationStep({ data }: Props) {
         stopName: stop?.name || st.stop_id,
         stop_lat: stop?.lat,
         stop_lon: stop?.lon,
+        stop_platform_code: stop?.platform_code,
         arrivalFormatted: formatTime(st.arrival_time),
         departureFormatted: formatTime(st.departure_time),
       };
