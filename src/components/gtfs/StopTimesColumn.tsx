@@ -218,6 +218,17 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
   const hasCalendarData =
     !!calendarInfo && (!!calendarInfo.cal || calendarInfo.calDates.length > 0);
 
+  const platformAssignments = stopTimes
+    .map((st, i) => ({
+      seq: i + 1,
+      stopName: st.stopName,
+      platform: getStopPlatform(st, { platform_code: st.stop_platform_code }),
+      time: st.arrivalFormatted || st.departureFormatted,
+    }))
+    .filter((p) => p.platform);
+  const hasPlatforms = platformAssignments.length > 0;
+
+
   return (
     <div className="flex w-96 shrink-0 flex-col">
       <div className="border-b border-border p-3">
