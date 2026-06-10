@@ -99,6 +99,7 @@ export function VisualizationStep({ data }: Props) {
         stopName: stop?.name || st.stop_id,
         stop_lat: stop?.lat,
         stop_lon: stop?.lon,
+        stop_platform_code: stop?.platform_code,
         arrivalFormatted: formatTime(st.arrival_time),
         departureFormatted: formatTime(st.departure_time),
       };
