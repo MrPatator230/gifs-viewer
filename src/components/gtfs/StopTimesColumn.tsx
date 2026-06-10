@@ -409,13 +409,20 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
                       )
                     </span>
                   </p>
-                  {platform && (
+                  {platform ? (
                     <span
                       className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-white"
                       style={{ backgroundColor: routeColor }}
                       title="Voie théorique"
                     >
                       V.{platform}
+                    </span>
+                  ) : (
+                    <span
+                      className="shrink-0 rounded border border-dashed border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                      title="Aucun quai théorique défini dans le GTFS"
+                    >
+                      Aucun quai défini
                     </span>
                   )}
                 </div>
