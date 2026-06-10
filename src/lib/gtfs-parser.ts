@@ -39,6 +39,8 @@ export interface GtfsStopTime {
   pickup_type?: string;
   drop_off_type?: string;
   platform?: string;
+  platform_code?: string;
+  track?: string;
 }
 
 export interface GtfsStop {
@@ -47,6 +49,21 @@ export interface GtfsStop {
   stop_lat?: string;
   stop_lon?: string;
   platform_code?: string;
+  parent_station?: string;
+  location_type?: string;
+}
+
+export function getStopPlatform(
+  st: { platform?: string; platform_code?: string; track?: string; stop_headsign?: string },
+  stop?: { platform_code?: string }
+): string {
+  return (
+    st.platform_code?.trim() ||
+    st.platform?.trim() ||
+    st.track?.trim() ||
+    stop?.platform_code?.trim() ||
+    ""
+  );
 }
 
 export interface GtfsCalendar {
