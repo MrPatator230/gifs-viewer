@@ -315,6 +315,43 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
         </div>
       )}
 
+      {/* Platforms toggle */}
+      {showPlatforms && hasPlatforms && (
+        <div className="border-b border-border px-4 py-3">
+          <div className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Train className="h-3.5 w-3.5" />
+            Attribution théorique des voies
+          </div>
+          <div className="space-y-1">
+            {platformAssignments.map((p) => (
+              <div
+                key={`${p.seq}-${p.stopName}`}
+                className="flex items-center gap-2 rounded-md bg-muted/40 px-2 py-1.5"
+              >
+                <span className="w-6 shrink-0 font-[family-name:var(--font-mono)] text-[10px] text-muted-foreground">
+                  #{String(p.seq).padStart(2, "0")}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-xs text-foreground">
+                  {p.stopName}
+                </span>
+                <span className="shrink-0 font-[family-name:var(--font-mono)] text-[10px] text-muted-foreground">
+                  {p.time}
+                </span>
+                <span
+                  className="shrink-0 rounded px-2 py-0.5 text-xs font-bold text-white"
+                  style={{ backgroundColor: routeColor }}
+                >
+                  Voie {p.platform}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            {platformAssignments.length} arrêt{platformAssignments.length > 1 ? "s" : ""} avec voie assignée sur {stopTimes.length}
+          </p>
+        </div>
+      )}
+
       {/* Map toggle */}
       {showMap && mapStops.length > 0 && (
         <div className="border-b border-border px-3 py-3">
