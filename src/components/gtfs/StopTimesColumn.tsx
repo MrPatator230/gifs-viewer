@@ -1,6 +1,7 @@
 import { useState, lazy, Suspense } from "react";
 import type { GtfsTrip, GtfsCalendar, GtfsCalendarDate, GtfsStopTime } from "@/lib/gtfs-parser";
-import { MapPin, Calendar, MessageSquare, Map as MapIcon } from "lucide-react";
+import { getStopPlatform } from "@/lib/gtfs-parser";
+import { MapPin, Calendar, MessageSquare, Map as MapIcon, Train } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
 const StopsMap = lazy(() =>
@@ -13,6 +14,7 @@ interface EnrichedStopTime extends GtfsStopTime {
   departureFormatted: string;
   stop_lat?: string;
   stop_lon?: string;
+  stop_platform_code?: string;
 }
 
 interface Props {
