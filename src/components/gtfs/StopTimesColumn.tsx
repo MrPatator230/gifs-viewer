@@ -190,6 +190,8 @@ function MiniCalendar({
 export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, comment, onCommentChange, routeColor }: Props) {
   const [showCalendar, setShowCalendar] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [showPlatforms, setShowPlatforms] = useState(false);
+
 
   const mapStops = stopTimes
     .filter((st) => st.stop_lat && st.stop_lon)
