@@ -266,7 +266,7 @@ export async function exportTripsPDF(
         stop?.stop_name || st.stop_id,
         arr,
         dep,
-        st.platform || stop?.platform_code || "",
+        getStopPlatform(st, stop),
       ];
     });
 
