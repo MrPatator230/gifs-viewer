@@ -384,41 +384,51 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
 
       {/* Stop times list */}
       <div className="flex-1 overflow-y-auto">
-        {stopTimes.map((st, i) => (
-          <div
-            key={`${st.stop_id}-${st.stop_sequence}`}
-            className="flex items-start gap-3 border-b border-border px-4 py-2.5"
-          >
-            <div className="flex flex-col items-center pt-1.5">
-              <div className="h-2.5 w-2.5 rounded-full border-2 border-primary bg-background" />
-              {i < stopTimes.length - 1 && (
-                <div className="mt-0.5 h-6 w-px bg-border" />
-              )}
+        {stopTimes.map((st, i) => {
+          const platform = getStopPlatform(st, { platform_code: st.stop_platform_code });
+          return (
+            <div
+              key={`${st.stop_id}-${st.stop_sequence}`}
+              className="flex items-start gap-3 border-b border-border px-4 py-2.5"
+            >
+              <div className="flex flex-col items-center pt-1.5">
+                <div className="h-2.5 w-2.5 rounded-full border-2 border-primary bg-background" />
+                {i < stopTimes.length - 1 && (
+                  <div className="mt-0.5 h-6 w-px bg-border" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="min-w-0 flex-1 text-sm text-foreground">
+                    {st.stopName}{" "}
+                    <span className="text-primary">
+                      ({st.arrivalFormatted}
+                      {st.arrivalFormatted !== st.departureFormatted
+                        ? ` - ${st.departureFormatted}`
+                        : ""}
+                      )
+                    </span>
+                  </p>
+                  {platform && (
+                    <span
+                      className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-white"
+                      style={{ backgroundColor: routeColor }}
+                      title="Voie théorique"
+                    >
+                      V.{platform}
+                    </span>
+                  )}
+                </div>
+                {st.stop_headsign && (
+                  <p className="text-xs text-muted-foreground">{st.stop_headsign}</p>
+                )}
+              </div>
+              <span className="shrink-0 font-[family-name:var(--font-mono)] text-xs text-muted-foreground">
+                #{String(i + 1).padStart(2, "0")}
+              </span>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm text-foreground">
-                {st.stopName}{" "}
-                <span className="text-primary">
-                  ({st.arrivalFormatted}
-                  {st.arrivalFormatted !== st.departureFormatted
-                    ? ` - ${st.departureFormatted}`
-                    : ""}
-                  )
-                </span>
-              </p>
-              {(st.platform || st.stop_headsign) && (
-                <p className="text-xs text-muted-foreground">
-                  {st.platform && `Voie ${st.platform}`}
-                  {st.platform && st.stop_headsign && " · "}
-                  {st.stop_headsign}
-                </p>
-              )}
-            </div>
-            <span className="shrink-0 font-[family-name:var(--font-mono)] text-xs text-muted-foreground">
-              #{String(i + 1).padStart(2, "0")}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
