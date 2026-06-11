@@ -383,7 +383,7 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
       </div>
 
       {/* Stop times list */}
-      <div className="flex-1 overflow-y-auto">
+      <div>
         {stopTimes.map((st, i) => {
           const platform = getStopPlatform(st, { platform_code: st.stop_platform_code });
           return (
