@@ -14,6 +14,7 @@ import {
 import { RoutesColumn } from "./RoutesColumn";
 import { TripsColumn } from "./TripsColumn";
 import { StopTimesColumn } from "./StopTimesColumn";
+import { TripSearch } from "./TripSearch";
 
 interface Props {
   data: GtfsData;
