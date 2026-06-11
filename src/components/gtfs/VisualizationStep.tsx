@@ -14,6 +14,7 @@ import {
 import { RoutesColumn } from "./RoutesColumn";
 import { TripsColumn } from "./TripsColumn";
 import { StopTimesColumn } from "./StopTimesColumn";
+import { TripSearch } from "./TripSearch";
 
 interface Props {
   data: GtfsData;
@@ -144,6 +145,17 @@ export function VisualizationStep({ data }: Props) {
         <span className="text-xs text-muted-foreground">
           {data.routes.length} lignes · {data.trips.length} courses · {data.stops.length} arrêts
         </span>
+        <div className="ml-auto">
+          <TripSearch
+            data={data}
+            stopsMap={stopsMap}
+            stopTimesByTrip={stopTimesByTrip}
+            onSelect={(route, trip) => {
+              setSelectedRoute(route);
+              setSelectedTrip(trip);
+            }}
+          />
+        </div>
       </header>
 
       {/* 3-column layout */}

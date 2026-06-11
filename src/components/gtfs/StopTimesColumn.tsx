@@ -232,7 +232,7 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
 
 
   return (
-    <div className="flex w-96 shrink-0 flex-col">
+    <div className="flex w-96 shrink-0 flex-col overflow-y-auto">
       <div className="border-b border-border p-3">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
@@ -383,7 +383,7 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
       </div>
 
       {/* Stop times list */}
-      <div className="flex-1 overflow-y-auto">
+      <div>
         {stopTimes.map((st, i) => {
           const platform = getStopPlatform(st, { platform_code: st.stop_platform_code });
           return (
