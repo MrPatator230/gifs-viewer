@@ -2,9 +2,15 @@ import { useState, useMemo } from "react";
 import type { GtfsRoute, GtfsTrip, GtfsData } from "@/lib/gtfs-parser";
 import type { EnrichedTrip } from "./VisualizationStep";
 import { getRouteColor } from "@/lib/gtfs-parser";
-import { Clock, ArrowLeftRight, FileDown, FileText, CalendarDays } from "lucide-react";
+import { Clock, ArrowLeftRight, FileDown, FileText, CalendarDays, Train } from "lucide-react";
 import { buildExportMeta } from "@/lib/gtfs-export";
 import { ExportPreviewDialog } from "./ExportPreviewDialog";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
 
 interface Props {
   trips: EnrichedTrip[];
@@ -246,53 +252,150 @@ export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip, 
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">
-        {filteredTrips.map((et) => {
-          const isSelected = selectedTrip?.trip_id === et.trip.trip_id;
-          return (
-            <button
-              key={et.trip.trip_id}
-              onClick={() => onSelectTrip(et.trip)}
-              className={`flex w-full flex-col gap-2 border-b border-border px-4 py-3 text-left transition-colors ${
-                isSelected ? "bg-primary/10" : "hover:bg-card"
-              }`}
-            >
-              <div className="flex items-start gap-2">
-                <span
-                  className="mt-0.5 h-2 w-2 shrink-0 rounded-full"
-                  style={{ backgroundColor: routeColor }}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-foreground">
-                    {et.firstStop.name}{" "}
-                    <span className="text-primary">({et.firstStop.time})</span>
-                    {" > "}
-                    {et.lastStop.name}{" "}
-                    <span className="text-primary">({et.lastStop.time})</span>
-                  </p>
-                </div>
-                {et.trip.trip_short_name && (
-                  <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] font-medium text-muted-foreground">
-                    {et.trip.trip_short_name}
-                  </span>
-                )}
-              </div>
-              <div className="flex gap-1 pl-4">
-                {DAY_LABELS.map((day) => (
-                  <span
-                    key={day}
-                    className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                      et.days[day]
-                        ? "bg-primary/20 text-primary"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {day}
-                  </span>
-                ))}
-              </div>
-            </button>
+        {(() => {
+          const grouped = new Map<string, EnrichedTrip[]>();
+          const ungrouped: EnrichedTrip[] = [];
+          for (const et of filteredTrips) {
+            const num = et.trip.trip_short_name?.trim();
+            if (num) {
+              let arr = grouped.get(num);
+              if (!arr) { arr = []; grouped.set(num, arr); }
+              arr.push(et);
+            } else {
+              ungrouped.push(et);
+            }
+          }
+
+          const sortedGroupEntries = Array.from(grouped.entries()).sort((a, b) =>
+            a[0].localeCompare(b[0], undefined, { numeric: true })
           );
-        })}
+
+          const defaultOpen = selectedTrip?.trip_short_name?.trim()
+            ? [selectedTrip.trip_short_name.trim()]
+            : [];
+
+          return (
+            <Accordion type="multiple" defaultValue={defaultOpen} className="w-full">
+              {sortedGroupEntries.map(([trainNum, groupTrips]) => {
+                const firstTime = groupTrips[0]?.firstStop.time;
+                const lastTime = groupTrips[groupTrips.length - 1]?.lastStop.time;
+                return (
+                  <AccordionItem key={trainNum} value={trainNum} className="border-b border-border">
+                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <Train className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-[family-name:var(--font-mono)] text-sm font-semibold text-foreground">
+                          {trainNum}
+                        </span>
+                        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                          {groupTrips.length} course{groupTrips.length > 1 ? "s" : ""}
+                        </span>
+                        {firstTime && lastTime && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {firstTime} → {lastTime}
+                          </span>
+                        )}
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-0">
+                      {groupTrips.map((et) => {
+                        const isSelected = selectedTrip?.trip_id === et.trip.trip_id;
+                        return (
+                          <button
+                            key={et.trip.trip_id}
+                            onClick={() => onSelectTrip(et.trip)}
+                            className={`flex w-full flex-col gap-2 border-b border-border px-4 py-3 text-left transition-colors ${
+                              isSelected ? "bg-primary/10" : "hover:bg-card"
+                            }`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <span
+                                className="mt-0.5 h-2 w-2 shrink-0 rounded-full"
+                                style={{ backgroundColor: routeColor }}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm text-foreground">
+                                  {et.firstStop.name}{" "}
+                                  <span className="text-primary">({et.firstStop.time})</span>
+                                  {" > "}
+                                  {et.lastStop.name}{" "}
+                                  <span className="text-primary">({et.lastStop.time})</span>
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex gap-1 pl-4">
+                              {DAY_LABELS.map((day) => (
+                                <span
+                                  key={day}
+                                  className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                                    et.days[day]
+                                      ? "bg-primary/20 text-primary"
+                                      : "bg-muted text-muted-foreground"
+                                  }`}
+                                >
+                                  {day}
+                                </span>
+                              ))}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
+              {ungrouped.length > 0 && (
+                <div className="border-b border-border">
+                  <div className="px-4 py-3 text-xs font-medium text-muted-foreground">
+                    Sans numéro de train ({ungrouped.length})
+                  </div>
+                  {ungrouped.map((et) => {
+                    const isSelected = selectedTrip?.trip_id === et.trip.trip_id;
+                    return (
+                      <button
+                        key={et.trip.trip_id}
+                        onClick={() => onSelectTrip(et.trip)}
+                        className={`flex w-full flex-col gap-2 border-b border-border px-4 py-3 text-left transition-colors ${
+                          isSelected ? "bg-primary/10" : "hover:bg-card"
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <span
+                            className="mt-0.5 h-2 w-2 shrink-0 rounded-full"
+                            style={{ backgroundColor: routeColor }}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm text-foreground">
+                              {et.firstStop.name}{" "}
+                              <span className="text-primary">({et.firstStop.time})</span>
+                              {" > "}
+                              {et.lastStop.name}{" "}
+                              <span className="text-primary">({et.lastStop.time})</span>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 pl-4">
+                          {DAY_LABELS.map((day) => (
+                            <span
+                              key={day}
+                              className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                                et.days[day]
+                                  ? "bg-primary/20 text-primary"
+                                  : "bg-muted text-muted-foreground"
+                              }`}
+                            >
+                              {day}
+                            </span>
+                          ))}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </Accordion>
+          );
+        })()}
       </div>
 
       {exportFormat && (
