@@ -2,9 +2,15 @@ import { useState, useMemo } from "react";
 import type { GtfsRoute, GtfsTrip, GtfsData } from "@/lib/gtfs-parser";
 import type { EnrichedTrip } from "./VisualizationStep";
 import { getRouteColor } from "@/lib/gtfs-parser";
-import { Clock, ArrowLeftRight, FileDown, FileText, CalendarDays } from "lucide-react";
+import { Clock, ArrowLeftRight, FileDown, FileText, CalendarDays, Train } from "lucide-react";
 import { buildExportMeta } from "@/lib/gtfs-export";
 import { ExportPreviewDialog } from "./ExportPreviewDialog";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
 
 interface Props {
   trips: EnrichedTrip[];
