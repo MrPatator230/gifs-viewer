@@ -314,6 +314,10 @@ export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip, 
                               />
                               <div className="min-w-0 flex-1">
                                 <p className="text-sm text-foreground">
+                                  <span className="mr-1.5 inline-flex items-center gap-1 rounded bg-primary/15 px-1.5 py-0.5 align-middle font-[family-name:var(--font-mono)] text-[10px] font-semibold text-primary">
+                                    <Train className="h-3 w-3" />
+                                    {trainNum}
+                                  </span>
                                   {et.firstStop.name}{" "}
                                   <span className="text-primary">({et.firstStop.time})</span>
                                   {" > "}
