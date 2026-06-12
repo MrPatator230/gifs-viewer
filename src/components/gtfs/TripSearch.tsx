@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import { Search, X } from "lucide-react";
 import type { GtfsData, GtfsRoute, GtfsTrip, GtfsStopTime } from "@/lib/gtfs-parser";
-import { formatTime, getRouteColor } from "@/lib/gtfs-parser";
+import { formatTime, getRouteColor, getTripNumber } from "@/lib/gtfs-parser";
 
 interface SearchEntry {
   trip: GtfsTrip;
