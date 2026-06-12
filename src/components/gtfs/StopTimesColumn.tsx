@@ -1,6 +1,6 @@
 import { useState, lazy, Suspense } from "react";
 import type { GtfsTrip, GtfsCalendar, GtfsCalendarDate, GtfsStopTime } from "@/lib/gtfs-parser";
-import { getStopPlatform } from "@/lib/gtfs-parser";
+import { getStopPlatform, getTripNumber } from "@/lib/gtfs-parser";
 import { MapPin, Calendar, MessageSquare, Map as MapIcon, Train } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
