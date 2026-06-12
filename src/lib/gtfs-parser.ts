@@ -201,6 +201,25 @@ export function getTripComment(trip: GtfsTrip): string {
   return "";
 }
 
+/**
+ * Returns the train number for a trip. Prefers trip_short_name; otherwise
+ * extracts the first contiguous digit run from the comment (trip_desc /
+ * trip_note / trip_headsign), which is where SNCF-style feeds expose it.
+ */
+export function getTripNumber(trip: GtfsTrip): string {
+  const sn = trip.trip_short_name?.trim();
+  if (sn) return sn;
+  const desc = trip.trip_desc?.trim();
+  const note = trip.trip_note?.trim();
+  const headsign = trip.trip_headsign?.trim();
+  for (const src of [desc, note, headsign]) {
+    if (!src) continue;
+    const m = src.match(/\d{2,6}/);
+    if (m) return m[0];
+  }
+  return "";
+}
+
 export function getServiceDays(
   serviceId: string,
   calendar: GtfsCalendar[],
