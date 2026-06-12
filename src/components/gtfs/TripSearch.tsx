@@ -46,7 +46,10 @@ export function TripSearch({ data, stopsMap, stopTimesByTrip, onSelect }: Props)
       const firstTime = formatTime(first.departure_time);
       const lastTime = formatTime(last.arrival_time);
       const haystack = [
+        getTripNumber(trip),
         trip.trip_short_name,
+        trip.trip_desc,
+        trip.trip_note,
         trip.trip_headsign,
         trip.trip_id,
         route.route_short_name,
