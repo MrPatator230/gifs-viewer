@@ -1,6 +1,6 @@
 import { useState, lazy, Suspense } from "react";
 import type { GtfsTrip, GtfsCalendar, GtfsCalendarDate, GtfsStopTime } from "@/lib/gtfs-parser";
-import { getStopPlatform } from "@/lib/gtfs-parser";
+import { getStopPlatform, getTripNumber } from "@/lib/gtfs-parser";
 import { MapPin, Calendar, MessageSquare, Map as MapIcon, Train } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -238,7 +238,7 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
           <div className="min-w-0">
             <h2 className="font-[family-name:var(--font-heading)] text-sm font-semibold text-foreground">
               Détail
-              {selectedTrip.trip_short_name && ` — Train ${selectedTrip.trip_short_name}`}
+              {(() => { const n = getTripNumber(selectedTrip); return n ? ` — Train ${n}` : ""; })()}
             </h2>
             {selectedTrip.trip_headsign && (
               <p className="truncate text-xs text-muted-foreground">{selectedTrip.trip_headsign}</p>

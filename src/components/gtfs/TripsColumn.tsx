@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import type { GtfsRoute, GtfsTrip, GtfsData } from "@/lib/gtfs-parser";
 import type { EnrichedTrip } from "./VisualizationStep";
-import { getRouteColor } from "@/lib/gtfs-parser";
+import { getRouteColor, getTripNumber } from "@/lib/gtfs-parser";
 import { Clock, ArrowLeftRight, FileDown, FileText, CalendarDays, Train } from "lucide-react";
 import { buildExportMeta } from "@/lib/gtfs-export";
 import { ExportPreviewDialog } from "./ExportPreviewDialog";
@@ -256,7 +256,7 @@ export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip, 
           const grouped = new Map<string, EnrichedTrip[]>();
           const ungrouped: EnrichedTrip[] = [];
           for (const et of filteredTrips) {
-            const num = et.trip.trip_short_name?.trim();
+            const num = getTripNumber(et.trip);
             if (num) {
               let arr = grouped.get(num);
               if (!arr) { arr = []; grouped.set(num, arr); }
@@ -270,9 +270,8 @@ export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip, 
             a[0].localeCompare(b[0], undefined, { numeric: true })
           );
 
-          const defaultOpen = selectedTrip?.trip_short_name?.trim()
-            ? [selectedTrip.trip_short_name.trim()]
-            : [];
+          const selectedNum = selectedTrip ? getTripNumber(selectedTrip) : "";
+          const defaultOpen = selectedNum ? [selectedNum] : [];
 
           return (
             <Accordion type="multiple" defaultValue={defaultOpen} className="w-full">
@@ -315,6 +314,10 @@ export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip, 
                               />
                               <div className="min-w-0 flex-1">
                                 <p className="text-sm text-foreground">
+                                  <span className="mr-1.5 inline-flex items-center gap-1 rounded bg-primary/15 px-1.5 py-0.5 align-middle font-[family-name:var(--font-mono)] text-[10px] font-semibold text-primary">
+                                    <Train className="h-3 w-3" />
+                                    {trainNum}
+                                  </span>
                                   {et.firstStop.name}{" "}
                                   <span className="text-primary">({et.firstStop.time})</span>
                                   {" > "}

@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import { Search, X } from "lucide-react";
 import type { GtfsData, GtfsRoute, GtfsTrip, GtfsStopTime } from "@/lib/gtfs-parser";
-import { formatTime, getRouteColor } from "@/lib/gtfs-parser";
+import { formatTime, getRouteColor, getTripNumber } from "@/lib/gtfs-parser";
 
 interface SearchEntry {
   trip: GtfsTrip;
@@ -46,7 +46,10 @@ export function TripSearch({ data, stopsMap, stopTimesByTrip, onSelect }: Props)
       const firstTime = formatTime(first.departure_time);
       const lastTime = formatTime(last.arrival_time);
       const haystack = [
+        getTripNumber(trip),
         trip.trip_short_name,
+        trip.trip_desc,
+        trip.trip_note,
         trip.trip_headsign,
         trip.trip_id,
         route.route_short_name,
@@ -148,11 +151,14 @@ export function TripSearch({ data, stopsMap, stopTimesByTrip, onSelect }: Props)
                   >
                     {r.route.route_short_name}
                   </span>
-                  {r.trip.trip_short_name && (
-                    <span className="font-[family-name:var(--font-mono)] text-[10px] text-muted-foreground">
-                      {r.trip.trip_short_name}
-                    </span>
-                  )}
+                  {(() => {
+                    const num = getTripNumber(r.trip);
+                    return num ? (
+                      <span className="font-[family-name:var(--font-mono)] text-[10px] font-semibold text-foreground">
+                        {num}
+                      </span>
+                    ) : null;
+                  })()}
                   <span className="ml-auto font-[family-name:var(--font-mono)] text-[10px] text-primary">
                     {r.firstTime} → {r.lastTime}
                   </span>
