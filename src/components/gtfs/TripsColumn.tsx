@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import type { GtfsRoute, GtfsTrip, GtfsData } from "@/lib/gtfs-parser";
 import type { EnrichedTrip } from "./VisualizationStep";
-import { getRouteColor } from "@/lib/gtfs-parser";
+import { getRouteColor, getTripNumber } from "@/lib/gtfs-parser";
 import { Clock, ArrowLeftRight, FileDown, FileText, CalendarDays, Train } from "lucide-react";
 import { buildExportMeta } from "@/lib/gtfs-export";
 import { ExportPreviewDialog } from "./ExportPreviewDialog";
