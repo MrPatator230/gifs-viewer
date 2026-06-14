@@ -2,9 +2,10 @@ import { useState, useMemo } from "react";
 import type { GtfsRoute, GtfsTrip, GtfsData } from "@/lib/gtfs-parser";
 import type { EnrichedTrip } from "./VisualizationStep";
 import { getRouteColor, getTripNumber } from "@/lib/gtfs-parser";
-import { Clock, ArrowLeftRight, FileDown, FileText, CalendarDays, Train } from "lucide-react";
+import { Clock, ArrowLeftRight, FileDown, FileText, FileSpreadsheet, CalendarDays, Train } from "lucide-react";
 import { buildExportMeta } from "@/lib/gtfs-export";
 import { ExportPreviewDialog } from "./ExportPreviewDialog";
+import { ExcelExportDialog } from "./ExcelExportDialog";
 import {
   Accordion,
   AccordionItem,
@@ -69,6 +70,7 @@ export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip, 
   const [directionFilter, setDirectionFilter] = useState<string | null>(null);
   const [dayFilters, setDayFilters] = useState<Set<string>>(new Set());
   const [exportFormat, setExportFormat] = useState<"csv" | "pdf" | null>(null);
+  const [excelOpen, setExcelOpen] = useState(false);
 
   const directions = useMemo(() => {
     const dirs = new Set(trips.map((t) => t.trip.direction_id).filter(Boolean));
@@ -182,6 +184,15 @@ export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip, 
             >
               <FileText className="h-3 w-3" />
               PDF
+            </button>
+            <button
+              onClick={() => setExcelOpen(true)}
+              disabled={filteredTrips.length === 0}
+              title={`Exporter ${filteredTrips.length} horaires en Excel`}
+              className="flex items-center gap-1 rounded border border-border bg-card px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+            >
+              <FileSpreadsheet className="h-3 w-3" />
+              Excel
             </button>
           </div>
         </div>
@@ -409,6 +420,17 @@ export function TripsColumn({ trips, selectedRoute, selectedTrip, onSelectTrip, 
           route={selectedRoute}
           trips={filteredTrips}
           meta={exportMeta}
+          gtfsData={gtfsData}
+          holidayServices={holidayServices}
+        />
+      )}
+
+      {excelOpen && (
+        <ExcelExportDialog
+          open={excelOpen}
+          onOpenChange={setExcelOpen}
+          route={selectedRoute}
+          trips={filteredTrips}
           gtfsData={gtfsData}
           holidayServices={holidayServices}
         />
