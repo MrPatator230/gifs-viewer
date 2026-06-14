@@ -307,10 +307,14 @@ import * as XLSX from "xlsx";
 import { getTripNumber } from "./gtfs-parser";
 
 export const XLSX_HEADERS = [
+  "id",
   "numero_train",
   "type_train",
+  "type_train_id",
+  "gare_depart_id",
   "gare_depart_nom",
   "heure_depart",
+  "gare_arrivee_id",
   "gare_arrivee_nom",
   "heure_arrivee",
   "circule_lundi",
@@ -323,8 +327,22 @@ export const XLSX_HEADERS = [
   "circule_jours_feries",
   "circule_dimanches_feries",
   "jours_personnalises",
+  "jours_non_circulation",
+  "materiel_roulant_id",
+  "ligne_id",
+  "ligne_nom",
+  "service_annuel_id",
+  "service_annuel_nom",
   "est_substitution",
+  "motif_substitution",
+  "actif",
+  "created_at",
+  "updated_at",
+  "deleted_at",
   "gares_desservies",
+  "composition_train",
+  "substitution_disponible",
+  "region_id",
 ];
 
 function toHms(t?: string): string | null {
@@ -352,7 +370,6 @@ export function buildXlsxRow({ et, route, isHoliday, gtfsData }: XlsxRowInput) {
   const trip = et.trip;
   const cal = gtfsData.calendar.find((c) => c.service_id === trip.service_id);
 
-  // Stop sequence
   const sts = gtfsData.stopTimes
     .filter((st) => st.trip_id === trip.trip_id)
     .sort((a, b) => Number(a.stop_sequence) - Number(b.stop_sequence));
@@ -372,10 +389,14 @@ export function buildXlsxRow({ et, route, isHoliday, gtfsData }: XlsxRowInput) {
   });
 
   return {
+    id: "",
     numero_train: getTripNumber(trip) || "",
     type_train: route.route_short_name || route.route_long_name || "",
+    type_train_id: "",
+    gare_depart_id: "",
     gare_depart_nom: et.firstStop.name,
     heure_depart: toHms(sts[0]?.departure_time) || "",
+    gare_arrivee_id: "",
     gare_arrivee_nom: et.lastStop.name,
     heure_arrivee: toHms(sts[sts.length - 1]?.arrival_time) || "",
     circule_lundi: dayBool(cal?.monday),
@@ -388,8 +409,22 @@ export function buildXlsxRow({ et, route, isHoliday, gtfsData }: XlsxRowInput) {
     circule_jours_feries: isHoliday,
     circule_dimanches_feries: isHoliday && dayBool(cal?.sunday),
     jours_personnalises: "[]",
+    jours_non_circulation: "[]",
+    materiel_roulant_id: "",
+    ligne_id: route.route_id || "",
+    ligne_nom: route.route_long_name || route.route_short_name || "",
+    service_annuel_id: "",
+    service_annuel_nom: "",
     est_substitution: false,
+    motif_substitution: "",
+    actif: true,
+    created_at: "",
+    updated_at: "",
+    deleted_at: "",
     gares_desservies: JSON.stringify(gares),
+    composition_train: "",
+    substitution_disponible: false,
+    region_id: "",
   };
 }
 
