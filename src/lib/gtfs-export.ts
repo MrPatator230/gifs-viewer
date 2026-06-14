@@ -299,3 +299,131 @@ export async function exportTripsPDF(
   const name = (route.route_short_name || route.route_id).replace(/[^\w-]+/g, "_");
   doc.save(`horaires_${name}.pdf`);
 }
+
+// ============================================================
+// Excel (.xlsx) export — matches the user's app import format
+// ============================================================
+import * as XLSX from "xlsx";
+import { getTripNumber } from "./gtfs-parser";
+
+export const XLSX_HEADERS = [
+  "numero_train",
+  "type_train",
+  "gare_depart_nom",
+  "heure_depart",
+  "gare_arrivee_nom",
+  "heure_arrivee",
+  "circule_lundi",
+  "circule_mardi",
+  "circule_mercredi",
+  "circule_jeudi",
+  "circule_vendredi",
+  "circule_samedi",
+  "circule_dimanche",
+  "circule_jours_feries",
+  "circule_dimanches_feries",
+  "jours_personnalises",
+  "est_substitution",
+  "gares_desservies",
+];
+
+function toHms(t?: string): string | null {
+  if (!t) return null;
+  const parts = t.split(":");
+  if (parts.length < 2) return t;
+  const h = parts[0].padStart(2, "0");
+  const m = (parts[1] || "00").padStart(2, "0");
+  const s = (parts[2] || "00").padStart(2, "0");
+  return `${h}:${m}:${s}`;
+}
+
+function dayBool(v?: string): boolean {
+  return v === "1";
+}
+
+export interface XlsxRowInput {
+  et: EnrichedTrip;
+  route: GtfsRoute;
+  isHoliday: boolean;
+  gtfsData: GtfsData;
+}
+
+export function buildXlsxRow({ et, route, isHoliday, gtfsData }: XlsxRowInput) {
+  const trip = et.trip;
+  const cal = gtfsData.calendar.find((c) => c.service_id === trip.service_id);
+
+  // Stop sequence
+  const sts = gtfsData.stopTimes
+    .filter((st) => st.trip_id === trip.trip_id)
+    .sort((a, b) => Number(a.stop_sequence) - Number(b.stop_sequence));
+  const stopsById = new Map(gtfsData.stops.map((s) => [s.stop_id, s]));
+
+  const gares = sts.map((st, i) => {
+    const stop = stopsById.get(st.stop_id);
+    const theoretical = getStopPlatform(st, stop) || null;
+    return {
+      ordre: i,
+      gare_nom: stop?.stop_name || st.stop_id,
+      heure_depart: i === sts.length - 1 ? null : toHms(st.departure_time),
+      heure_arrivee: i === 0 ? null : toHms(st.arrival_time),
+      quai: theoretical,
+      quai_reel: null,
+    };
+  });
+
+  return {
+    numero_train: getTripNumber(trip) || "",
+    type_train: route.route_short_name || route.route_long_name || "",
+    gare_depart_nom: et.firstStop.name,
+    heure_depart: toHms(sts[0]?.departure_time) || "",
+    gare_arrivee_nom: et.lastStop.name,
+    heure_arrivee: toHms(sts[sts.length - 1]?.arrival_time) || "",
+    circule_lundi: dayBool(cal?.monday),
+    circule_mardi: dayBool(cal?.tuesday),
+    circule_mercredi: dayBool(cal?.wednesday),
+    circule_jeudi: dayBool(cal?.thursday),
+    circule_vendredi: dayBool(cal?.friday),
+    circule_samedi: dayBool(cal?.saturday),
+    circule_dimanche: dayBool(cal?.sunday),
+    circule_jours_feries: isHoliday,
+    circule_dimanches_feries: isHoliday && dayBool(cal?.sunday),
+    jours_personnalises: "[]",
+    est_substitution: false,
+    gares_desservies: JSON.stringify(gares),
+  };
+}
+
+export async function exportTripsXLSX(
+  route: GtfsRoute,
+  trips: EnrichedTrip[],
+  gtfsData: GtfsData,
+  holidayServices: Set<string>
+): Promise<void> {
+  await new Promise((r) => setTimeout(r, 0));
+
+  const rows = trips.map((et) =>
+    buildXlsxRow({
+      et,
+      route,
+      isHoliday: holidayServices.has(et.trip.service_id),
+      gtfsData,
+    })
+  );
+
+  const ws = XLSX.utils.json_to_sheet(rows, { header: XLSX_HEADERS });
+
+  // Column widths for readability
+  ws["!cols"] = XLSX_HEADERS.map((h) => {
+    if (h === "gares_desservies") return { wch: 60 };
+    if (h.startsWith("circule_")) return { wch: 14 };
+    if (h.startsWith("gare_")) return { wch: 22 };
+    if (h.startsWith("heure_")) return { wch: 10 };
+    return { wch: 16 };
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Horaires");
+
+  const name = (route.route_short_name || route.route_id).replace(/[^\w-]+/g, "_");
+  XLSX.writeFile(wb, `horaires_${name}.xlsx`);
+}
