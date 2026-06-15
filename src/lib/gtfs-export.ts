@@ -476,7 +476,9 @@ export function buildXlsxRow({ et, route, isHoliday, gtfsData }: XlsxRowInput) {
     circule_jours_feries: isHoliday,
     circule_dimanches_feries: isHoliday && dim,
 
-    jours_personnalises: "[]",
+    jours_personnalises: JSON.stringify(
+      buildJoursPersonnalises(trip.service_id, gtfsData.calendarDates, d)
+    ),
     jours_non_circulation: "[]",
     materiel_roulant_id: "",
     ligne_id: route.route_id || "",
