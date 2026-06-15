@@ -327,6 +327,7 @@ export const XLSX_HEADERS = [
   "circule_jours_feries",
   "circule_dimanches_feries",
   "jours_personnalises",
+  "jours_personnalises_groupes",
   "jours_non_circulation",
   "materiel_roulant_id",
   "ligne_id",
@@ -412,8 +413,44 @@ export function buildJoursPersonnalises(
   return out;
 }
 
+/**
+ * Same as buildJoursPersonnalises but always returns grouped periods
+ * ({debut, fin, circule}), even for a single day (debut === fin).
+ */
+export function buildJoursPersonnalisesGroupes(
+  serviceId: string,
+  calendarDates: { service_id: string; date: string; exception_type: string }[],
+  weeklyDays: Record<string, boolean>
+): Array<{ debut: string; fin: string; circule: boolean }> {
+  const items = calendarDates
+    .filter((cd) => cd.service_id === serviceId)
+    .map((cd) => {
+      const iso = gtfsToIso(cd.date);
+      const dt = new Date(iso + "T00:00:00Z");
+      const weekday = WEEKDAY_LABELS[dt.getUTCDay()];
+      const normallyRuns = !!weeklyDays[weekday];
+      const circule = cd.exception_type === "1";
+      return { iso, circule, exceptional: circule !== normallyRuns };
+    })
+    .filter((x) => x.exceptional)
+    .sort((a, b) => a.iso.localeCompare(b.iso));
 
-
+  const out: Array<{ debut: string; fin: string; circule: boolean }> = [];
+  let i = 0;
+  while (i < items.length) {
+    let j = i;
+    while (
+      j + 1 < items.length &&
+      items[j + 1].circule === items[i].circule &&
+      isoAddDay(items[j].iso) === items[j + 1].iso
+    ) {
+      j++;
+    }
+    out.push({ debut: items[i].iso, fin: items[j].iso, circule: items[i].circule });
+    i = j + 1;
+  }
+  return out;
+}
 
 export interface XlsxRowInput {
   et: EnrichedTrip;
@@ -478,6 +515,9 @@ export function buildXlsxRow({ et, route, isHoliday, gtfsData }: XlsxRowInput) {
 
     jours_personnalises: JSON.stringify(
       buildJoursPersonnalises(trip.service_id, gtfsData.calendarDates, d)
+    ),
+    jours_personnalises_groupes: JSON.stringify(
+      buildJoursPersonnalisesGroupes(trip.service_id, gtfsData.calendarDates, d)
     ),
     jours_non_circulation: "[]",
     materiel_roulant_id: "",
