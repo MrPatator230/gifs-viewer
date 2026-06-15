@@ -367,7 +367,8 @@ export interface XlsxRowInput {
 
 export function buildXlsxRow({ et, route, isHoliday, gtfsData }: XlsxRowInput) {
   const trip = et.trip;
-  const cal = gtfsData.calendar.find((c) => c.service_id === trip.service_id);
+
+
 
   const sts = gtfsData.stopTimes
     .filter((st) => st.trip_id === trip.trip_id)
