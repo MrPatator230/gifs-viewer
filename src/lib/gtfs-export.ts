@@ -470,6 +470,77 @@ export async function exportTripsXLSX(
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Horaires");
 
+  // -------- Sheet "Contrôle" : diagnostic des jours de circulation --------
+  const controlHeaders = [
+    "trip_id",
+    "numero_train",
+    "service_id",
+    "gare_depart_nom",
+    "heure_depart",
+    "gare_arrivee_nom",
+    "heure_arrivee",
+    "circule_lundi",
+    "circule_mardi",
+    "circule_mercredi",
+    "circule_jeudi",
+    "circule_vendredi",
+    "circule_samedi",
+    "circule_dimanche",
+    "circule_jours_feries",
+    "circule_dimanches_feries",
+    "nb_jours_actifs",
+    "source_jours",
+  ];
+  const controlRows = trips.map((et, i) => {
+    const row = rows[i];
+    const hasCal = !!gtfsData.calendar.find((c) => c.service_id === et.trip.service_id);
+    const hasCalDates = gtfsData.calendarDates.some((cd) => cd.service_id === et.trip.service_id);
+    const dayFlags = [
+      row.circule_lundi, row.circule_mardi, row.circule_mercredi, row.circule_jeudi,
+      row.circule_vendredi, row.circule_samedi, row.circule_dimanche,
+    ];
+    const nbActifs = dayFlags.filter(Boolean).length;
+    const source = hasCal && hasCalDates
+      ? "calendar + calendar_dates"
+      : hasCal
+        ? "calendar.txt"
+        : hasCalDates
+          ? "calendar_dates.txt"
+          : "AUCUNE";
+    return {
+      trip_id: et.trip.trip_id,
+      numero_train: row.numero_train,
+      service_id: et.trip.service_id,
+      gare_depart_nom: row.gare_depart_nom,
+      heure_depart: row.heure_depart,
+      gare_arrivee_nom: row.gare_arrivee_nom,
+      heure_arrivee: row.heure_arrivee,
+      circule_lundi: row.circule_lundi,
+      circule_mardi: row.circule_mardi,
+      circule_mercredi: row.circule_mercredi,
+      circule_jeudi: row.circule_jeudi,
+      circule_vendredi: row.circule_vendredi,
+      circule_samedi: row.circule_samedi,
+      circule_dimanche: row.circule_dimanche,
+      circule_jours_feries: row.circule_jours_feries,
+      circule_dimanches_feries: row.circule_dimanches_feries,
+      nb_jours_actifs: nbActifs,
+      source_jours: source,
+    };
+  });
+  const wsCtrl = XLSX.utils.json_to_sheet(controlRows, { header: controlHeaders });
+  wsCtrl["!cols"] = controlHeaders.map((h) => {
+    if (h === "source_jours") return { wch: 26 };
+    if (h.startsWith("circule_")) return { wch: 14 };
+    if (h.startsWith("gare_")) return { wch: 22 };
+    if (h.startsWith("heure_")) return { wch: 10 };
+    if (h === "nb_jours_actifs") return { wch: 14 };
+    return { wch: 18 };
+  });
+  wsCtrl["!freeze"] = { xSplit: 0, ySplit: 1 };
+  XLSX.utils.book_append_sheet(wb, wsCtrl, "Contrôle");
+
+
   const name = (route.route_short_name || route.route_id).replace(/[^\w-]+/g, "_");
   XLSX.writeFile(wb, `horaires_${name}.xlsx`);
 }
