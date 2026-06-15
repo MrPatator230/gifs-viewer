@@ -355,9 +355,8 @@ function toHms(t?: string): string | null {
   return `${h}:${m}:${s}`;
 }
 
-function dayBool(v?: string): boolean {
-  return v === "1";
-}
+
+
 
 export interface XlsxRowInput {
   et: EnrichedTrip;
