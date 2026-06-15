@@ -355,6 +355,63 @@ function toHms(t?: string): string | null {
   return `${h}:${m}:${s}`;
 }
 
+function gtfsToIso(d: string): string {
+  if (!d || d.length !== 8) return d || "";
+  return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
+}
+
+function isoAddDay(iso: string): string {
+  const dt = new Date(iso + "T00:00:00Z");
+  dt.setUTCDate(dt.getUTCDate() + 1);
+  return dt.toISOString().slice(0, 10);
+}
+
+const WEEKDAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+
+/**
+ * Build the `jours_personnalises` list from calendar_dates exceptions.
+ * Only keeps dates deviating from the weekly pattern and collapses
+ * consecutive same-type dates into a { debut, fin, circule } period.
+ */
+export function buildJoursPersonnalises(
+  serviceId: string,
+  calendarDates: { service_id: string; date: string; exception_type: string }[],
+  weeklyDays: Record<string, boolean>
+): Array<{ date: string; circule: boolean } | { debut: string; fin: string; circule: boolean }> {
+  const items = calendarDates
+    .filter((cd) => cd.service_id === serviceId)
+    .map((cd) => {
+      const iso = gtfsToIso(cd.date);
+      const dt = new Date(iso + "T00:00:00Z");
+      const weekday = WEEKDAY_LABELS[dt.getUTCDay()];
+      const normallyRuns = !!weeklyDays[weekday];
+      const circule = cd.exception_type === "1";
+      return { iso, circule, exceptional: circule !== normallyRuns };
+    })
+    .filter((x) => x.exceptional)
+    .sort((a, b) => a.iso.localeCompare(b.iso));
+
+  const out: Array<{ date: string; circule: boolean } | { debut: string; fin: string; circule: boolean }> = [];
+  let i = 0;
+  while (i < items.length) {
+    let j = i;
+    while (
+      j + 1 < items.length &&
+      items[j + 1].circule === items[i].circule &&
+      isoAddDay(items[j].iso) === items[j + 1].iso
+    ) {
+      j++;
+    }
+    if (j > i) {
+      out.push({ debut: items[i].iso, fin: items[j].iso, circule: items[i].circule });
+    } else {
+      out.push({ date: items[i].iso, circule: items[i].circule });
+    }
+    i = j + 1;
+  }
+  return out;
+}
+
 
 
 
@@ -419,7 +476,9 @@ export function buildXlsxRow({ et, route, isHoliday, gtfsData }: XlsxRowInput) {
     circule_jours_feries: isHoliday,
     circule_dimanches_feries: isHoliday && dim,
 
-    jours_personnalises: "[]",
+    jours_personnalises: JSON.stringify(
+      buildJoursPersonnalises(trip.service_id, gtfsData.calendarDates, d)
+    ),
     jours_non_circulation: "[]",
     materiel_roulant_id: "",
     ligne_id: route.route_id || "",
