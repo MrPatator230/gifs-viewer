@@ -388,6 +388,16 @@ export function buildXlsxRow({ et, route, isHoliday, gtfsData }: XlsxRowInput) {
     };
   });
 
+  // Days come from EnrichedTrip.days (covers calendar.txt AND calendar_dates-only services)
+  const d = et.days || {};
+  const lun = !!d.Lun;
+  const mar = !!d.Mar;
+  const mer = !!d.Mer;
+  const jeu = !!d.Jeu;
+  const ven = !!d.Ven;
+  const sam = !!d.Sam;
+  const dim = !!d.Dim;
+
   return {
     id: "",
     numero_train: getTripNumber(trip) || "",
@@ -399,15 +409,16 @@ export function buildXlsxRow({ et, route, isHoliday, gtfsData }: XlsxRowInput) {
     gare_arrivee_id: "",
     gare_arrivee_nom: et.lastStop.name,
     heure_arrivee: toHms(sts[sts.length - 1]?.arrival_time) || "",
-    circule_lundi: dayBool(cal?.monday),
-    circule_mardi: dayBool(cal?.tuesday),
-    circule_mercredi: dayBool(cal?.wednesday),
-    circule_jeudi: dayBool(cal?.thursday),
-    circule_vendredi: dayBool(cal?.friday),
-    circule_samedi: dayBool(cal?.saturday),
-    circule_dimanche: dayBool(cal?.sunday),
+    circule_lundi: lun,
+    circule_mardi: mar,
+    circule_mercredi: mer,
+    circule_jeudi: jeu,
+    circule_vendredi: ven,
+    circule_samedi: sam,
+    circule_dimanche: dim,
     circule_jours_feries: isHoliday,
-    circule_dimanches_feries: isHoliday && dayBool(cal?.sunday),
+    circule_dimanches_feries: isHoliday && dim,
+
     jours_personnalises: "[]",
     jours_non_circulation: "[]",
     materiel_roulant_id: "",
