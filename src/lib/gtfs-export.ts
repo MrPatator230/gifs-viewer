@@ -329,6 +329,7 @@ export const XLSX_HEADERS = [
   "jours_personnalises",
   "jours_personnalises_groupes",
   "jours_circulation",
+  "nb_jours_circulation",
   "jours_non_circulation",
   "materiel_roulant_id",
   "ligne_id",
