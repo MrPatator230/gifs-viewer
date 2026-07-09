@@ -601,7 +601,8 @@ export async function exportTripsXLSX(
   // Column widths for readability
   ws["!cols"] = XLSX_HEADERS.map((h) => {
     if (h === "gares_desservies") return { wch: 60 };
-    if (h === "jours_circulation") return { wch: 60 };
+    if (h === "jours_circulation") return { wch: 80 };
+    if (h === "nb_jours_circulation") return { wch: 12 };
     if (h === "jours_personnalises" || h === "jours_personnalises_groupes") return { wch: 40 };
     if (h.startsWith("circule_")) return { wch: 14 };
     if (h.startsWith("gare_")) return { wch: 22 };
