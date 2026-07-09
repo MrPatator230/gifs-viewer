@@ -328,6 +328,7 @@ export const XLSX_HEADERS = [
   "circule_dimanches_feries",
   "jours_personnalises",
   "jours_personnalises_groupes",
+  "jours_circulation",
   "jours_non_circulation",
   "materiel_roulant_id",
   "ligne_id",
@@ -452,6 +453,40 @@ export function buildJoursPersonnalisesGroupes(
   return out;
 }
 
+/**
+ * Compute every actual running date (ISO YYYY-MM-DD) for a service_id by
+ * combining calendar.txt (weekly pattern + validity window) and
+ * calendar_dates.txt (added = 1, removed = 2).
+ */
+export function buildJoursCirculation(
+  serviceId: string,
+  calendar: GtfsCalendar[],
+  calendarDates: { service_id: string; date: string; exception_type: string }[]
+): string[] {
+  const set = new Set<string>();
+  const cal = calendar.find((c) => c.service_id === serviceId);
+  if (cal && cal.start_date && cal.end_date) {
+    const weekly = [
+      cal.sunday, cal.monday, cal.tuesday, cal.wednesday,
+      cal.thursday, cal.friday, cal.saturday,
+    ].map((v) => v === "1");
+    let cur = gtfsToIso(cal.start_date);
+    const end = gtfsToIso(cal.end_date);
+    while (cur && cur <= end) {
+      const dow = new Date(cur + "T00:00:00Z").getUTCDay();
+      if (weekly[dow]) set.add(cur);
+      cur = isoAddDay(cur);
+    }
+  }
+  for (const cd of calendarDates) {
+    if (cd.service_id !== serviceId) continue;
+    const iso = gtfsToIso(cd.date);
+    if (cd.exception_type === "1") set.add(iso);
+    else if (cd.exception_type === "2") set.delete(iso);
+  }
+  return Array.from(set).sort();
+}
+
 export interface XlsxRowInput {
   et: EnrichedTrip;
   route: GtfsRoute;
@@ -519,6 +554,9 @@ export function buildXlsxRow({ et, route, isHoliday, gtfsData }: XlsxRowInput) {
     jours_personnalises_groupes: JSON.stringify(
       buildJoursPersonnalisesGroupes(trip.service_id, gtfsData.calendarDates, d)
     ),
+    jours_circulation: JSON.stringify(
+      buildJoursCirculation(trip.service_id, gtfsData.calendar, gtfsData.calendarDates)
+    ),
     jours_non_circulation: "[]",
     materiel_roulant_id: "",
     ligne_id: route.route_id || "",
@@ -560,6 +598,8 @@ export async function exportTripsXLSX(
   // Column widths for readability
   ws["!cols"] = XLSX_HEADERS.map((h) => {
     if (h === "gares_desservies") return { wch: 60 };
+    if (h === "jours_circulation") return { wch: 60 };
+    if (h === "jours_personnalises" || h === "jours_personnalises_groupes") return { wch: 40 };
     if (h.startsWith("circule_")) return { wch: 14 };
     if (h.startsWith("gare_")) return { wch: 22 };
     if (h.startsWith("heure_")) return { wch: 10 };
