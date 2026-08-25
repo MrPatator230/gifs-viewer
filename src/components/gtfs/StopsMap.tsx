@@ -17,7 +17,26 @@ interface Props {
   routeColor: string;
 }
 
-export function StopsMap({ stops, routeColor }: Props) {
+function escapeHtml(value: string): string {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/** Only allow safe CSS color values coming from untrusted GTFS files. */
+function safeColor(value: string): string {
+  const v = (value || "").trim();
+  if (/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v)) return v;
+  if (/^[0-9a-fA-F]{6}$/.test(v)) return `#${v}`;
+  return "#3b82f6";
+}
+
+export function StopsMap({ stops, routeColor: rawRouteColor }: Props) {
+  const routeColor = safeColor(rawRouteColor);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
 
@@ -71,10 +90,13 @@ export function StopsMap({ stops, routeColor }: Props) {
       });
       L.marker([s.lat, s.lon], { icon })
         .bindPopup(
-          `<strong>${s.name}</strong><br/>${s.arrival}${
-            s.arrival !== s.departure ? ` → ${s.departure}` : ""
-          }<br/><span style="opacity:0.7">#${String(s.sequence).padStart(2, "0")}</span>`
+          `<strong>${escapeHtml(s.name)}</strong><br/>${escapeHtml(s.arrival)}${
+            s.arrival !== s.departure ? ` → ${escapeHtml(s.departure)}` : ""
+          }<br/><span style="opacity:0.7">#${escapeHtml(
+            String(s.sequence).padStart(2, "0")
+          )}</span>`
         )
+
         .addTo(map);
     });
 
