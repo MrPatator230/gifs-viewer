@@ -57,6 +57,35 @@ export function VisualizationStep({ data }: Props) {
     return m;
   }, [data.stopTimes]);
 
+  // Region per route, derived from the geolocation of its stops
+  const routeRegions = useMemo(() => {
+    const acc = new Map<string, { lat: number; lon: number; n: number }>();
+    const seenTripsPerRoute = new Map<string, number>();
+    for (const trip of data.trips) {
+      const seen = seenTripsPerRoute.get(trip.route_id) ?? 0;
+      if (seen >= 3) continue;
+      seenTripsPerRoute.set(trip.route_id, seen + 1);
+      const sts = stopTimesByTrip.get(trip.trip_id) || [];
+      for (const st of sts) {
+        const stop = stopsMap.get(st.stop_id);
+        const lat = Number(stop?.lat);
+        const lon = Number(stop?.lon);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+        const cur = acc.get(trip.route_id) || { lat: 0, lon: 0, n: 0 };
+        cur.lat += lat;
+        cur.lon += lon;
+        cur.n += 1;
+        acc.set(trip.route_id, cur);
+      }
+    }
+    const m = new Map<string, string>();
+    for (const [routeId, v] of acc) {
+      if (v.n === 0) continue;
+      m.set(routeId, getRegionForPoint(v.lat / v.n, v.lon / v.n));
+    }
+    return m;
+  }, [data.trips, stopTimesByTrip, stopsMap]);
+
   // Trips for selected route
   const enrichedTrips = useMemo<EnrichedTrip[]>(() => {
     if (!selectedRoute) return [];
