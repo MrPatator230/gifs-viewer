@@ -7,26 +7,37 @@ interface Props {
   routes: GtfsRoute[];
   selectedRoute: GtfsRoute | null;
   onSelectRoute: (route: GtfsRoute) => void;
+  routeRegions?: Map<string, string>;
 }
 
-export function RoutesColumn({ routes, selectedRoute, onSelectRoute }: Props) {
+export function RoutesColumn({ routes, selectedRoute, onSelectRoute, routeRegions }: Props) {
   const [search, setSearch] = useState("");
+  const [region, setRegion] = useState("all");
+
+  const regions = useMemo(() => {
+    if (!routeRegions) return [];
+    return Array.from(new Set(routeRegions.values())).sort((a, b) =>
+      a.localeCompare(b, "fr")
+    );
+  }, [routeRegions]);
 
   const filtered = useMemo(() => {
-    if (!search) return routes;
     const q = search.toLowerCase();
-    return routes.filter(
-      (r) =>
+    return routes.filter((r) => {
+      if (region !== "all" && routeRegions?.get(r.route_id) !== region) return false;
+      if (!q) return true;
+      return (
         r.route_short_name?.toLowerCase().includes(q) ||
         r.route_long_name?.toLowerCase().includes(q)
-    );
-  }, [routes, search]);
+      );
+    });
+  }, [routes, search, region, routeRegions]);
 
   return (
     <div className="flex w-80 shrink-0 flex-col border-r border-border">
       <div className="border-b border-border p-3">
         <h2 className="mb-2 font-[family-name:var(--font-heading)] text-sm font-semibold text-foreground">
-          Lignes ({routes.length})
+          Lignes ({filtered.length}/{routes.length})
         </h2>
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
@@ -38,7 +49,23 @@ export function RoutesColumn({ routes, selectedRoute, onSelectRoute }: Props) {
             className="w-full rounded-md border border-border bg-input px-3 py-2 pl-8 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
+        {regions.length > 0 && (
+          <select
+            value={region}
+            onChange={(e) => setRegion(e.target.value)}
+            className="mt-2 w-full rounded-md border border-border bg-input px-2 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            aria-label="Filtrer par région"
+          >
+            <option value="all">Toutes les régions</option>
+            {regions.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
+
       <div className="flex-1 overflow-y-auto">
         {filtered.map((route) => {
           const isSelected = selectedRoute?.route_id === route.route_id;
