@@ -193,6 +193,8 @@ export function VisualizationStep({ data }: Props) {
       <div className="flex flex-1 overflow-hidden">
         <RoutesColumn
           routes={data.routes}
+          routeRegions={routeRegions}
+
           selectedRoute={selectedRoute}
           onSelectRoute={(r) => {
             setSelectedRoute(r);
