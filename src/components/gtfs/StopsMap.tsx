@@ -90,10 +90,13 @@ export function StopsMap({ stops, routeColor: rawRouteColor }: Props) {
       });
       L.marker([s.lat, s.lon], { icon })
         .bindPopup(
-          `<strong>${s.name}</strong><br/>${s.arrival}${
-            s.arrival !== s.departure ? ` → ${s.departure}` : ""
-          }<br/><span style="opacity:0.7">#${String(s.sequence).padStart(2, "0")}</span>`
+          `<strong>${escapeHtml(s.name)}</strong><br/>${escapeHtml(s.arrival)}${
+            s.arrival !== s.departure ? ` → ${escapeHtml(s.departure)}` : ""
+          }<br/><span style="opacity:0.7">#${escapeHtml(
+            String(s.sequence).padStart(2, "0")
+          )}</span>`
         )
+
         .addTo(map);
     });
 
