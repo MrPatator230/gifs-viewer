@@ -1,6 +1,6 @@
 import { useState, lazy, Suspense } from "react";
-import type { GtfsTrip, GtfsCalendar, GtfsCalendarDate, GtfsStopTime } from "@/lib/gtfs-parser";
-import { getStopPlatform, getTripNumber } from "@/lib/gtfs-parser";
+import type { GtfsTrip, GtfsRoute, GtfsCalendar, GtfsCalendarDate, GtfsStopTime } from "@/lib/gtfs-parser";
+import { getStopPlatform, getTripNumber, getRouteTypeLabel } from "@/lib/gtfs-parser";
 import { MapPin, Calendar, MessageSquare, Map as MapIcon, Train } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -25,6 +25,7 @@ interface Props {
   comment: string;
   onCommentChange: (comment: string) => void;
   routeColor: string;
+  route: GtfsRoute | null;
 }
 
 const DAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -187,7 +188,7 @@ function MiniCalendar({
   );
 }
 
-export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, comment, onCommentChange, routeColor }: Props) {
+export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, comment, onCommentChange, routeColor, route }: Props) {
   const [showCalendar, setShowCalendar] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [showPlatforms, setShowPlatforms] = useState(false);
