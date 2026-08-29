@@ -1,6 +1,6 @@
 import { useState, lazy, Suspense } from "react";
-import type { GtfsTrip, GtfsRoute, GtfsCalendar, GtfsCalendarDate, GtfsStopTime } from "@/lib/gtfs-parser";
-import { getStopPlatform, getTripNumber, getRouteTypeLabel } from "@/lib/gtfs-parser";
+import type { GtfsTrip, GtfsRoute, GtfsAgency, GtfsCalendar, GtfsCalendarDate, GtfsStopTime } from "@/lib/gtfs-parser";
+import { getStopPlatform, getTripNumber, getTrainBrand, getRouteTypeLabel } from "@/lib/gtfs-parser";
 import { MapPin, Calendar, MessageSquare, Map as MapIcon, Train } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -26,6 +26,7 @@ interface Props {
   onCommentChange: (comment: string) => void;
   routeColor: string;
   route: GtfsRoute | null;
+  agencies: GtfsAgency[];
 }
 
 const DAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -188,7 +189,7 @@ function MiniCalendar({
   );
 }
 
-export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, comment, onCommentChange, routeColor, route }: Props) {
+export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, comment, onCommentChange, routeColor, route, agencies }: Props) {
   const [showCalendar, setShowCalendar] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [showPlatforms, setShowPlatforms] = useState(false);
@@ -221,7 +222,8 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
   const hasCalendarData =
     !!calendarInfo && (!!calendarInfo.cal || calendarInfo.calDates.length > 0);
 
-  const trainTypeLabel = route ? getRouteTypeLabel(route) : "";
+  const trainBrandLabel = route ? getTrainBrand(route, agencies) : "";
+  const vehicleTypeLabel = route ? getRouteTypeLabel(route) : "";
 
   const platformAssignments = stopTimes
     .map((st, i) => ({
@@ -243,15 +245,27 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
               Détail
               {(() => { const n = getTripNumber(selectedTrip); return n ? ` — Train ${n}` : ""; })()}
             </h2>
-            {trainTypeLabel && (
-              <span
-                className="mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold text-white"
-                style={{ backgroundColor: routeColor }}
-                title="Type de train (route_type GTFS)"
-              >
-                <Train className="h-3 w-3" />
-                {trainTypeLabel}
-              </span>
+            {(trainBrandLabel || vehicleTypeLabel) && (
+              <div className="mt-1 flex flex-wrap items-center gap-1">
+                {trainBrandLabel && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold text-white"
+                    style={{ backgroundColor: routeColor }}
+                    title="Marque commerciale du train (agency/route_desc GTFS)"
+                  >
+                    <Train className="h-3 w-3" />
+                    {trainBrandLabel}
+                  </span>
+                )}
+                {vehicleTypeLabel && vehicleTypeLabel !== trainBrandLabel && (
+                  <span
+                    className="inline-flex items-center rounded border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                    title="Type de véhicule (route_type GTFS)"
+                  >
+                    {vehicleTypeLabel}
+                  </span>
+                )}
+              </div>
             )}
             {selectedTrip.trip_headsign && (
               <p className="truncate text-xs text-muted-foreground">{selectedTrip.trip_headsign}</p>
