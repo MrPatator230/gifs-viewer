@@ -216,6 +216,7 @@ export function VisualizationStep({ data }: Props) {
           comment={currentComment}
           routeColor={selectedRouteColor}
           route={selectedRoute}
+          agencies={data.agencies}
           onCommentChange={(c) => {
             if (selectedTrip) {
               setTripComments((prev) => ({ ...prev, [selectedTrip.trip_id]: c }));

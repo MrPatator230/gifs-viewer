@@ -1,8 +1,14 @@
 import JSZip from "jszip";
 import Papa from "papaparse";
 
+export interface GtfsAgency {
+  agency_id?: string;
+  agency_name?: string;
+}
+
 export interface GtfsRoute {
   route_id: string;
+  agency_id?: string;
   route_short_name: string;
   route_long_name: string;
   route_color: string;
@@ -11,10 +17,9 @@ export interface GtfsRoute {
   route_desc?: string;
 }
 
-/** Maps a GTFS route_type code to a human-readable train type label. */
+/** Maps a GTFS route_type code to a human-readable vehicle type label. */
 export function getRouteTypeLabel(route: GtfsRoute): string {
   const t = route.route_type?.trim();
-  const desc = route.route_desc?.trim();
   const map: Record<string, string> = {
     "0": "Tramway",
     "1": "Métro",
@@ -39,14 +44,57 @@ export function getRouteTypeLabel(route: GtfsRoute): string {
     "900": "Tramway",
     "1000": "Transport fluvial",
   };
-  if (t && map[t]) {
-    // Prefer a more specific route_desc if provided alongside a generic code
-    if (desc && (t === "2" || t === "100")) return desc;
-    return map[t];
-  }
-  if (desc) return desc;
+  if (t && map[t]) return map[t];
   if (t) return `Type ${t}`;
   return "";
+}
+
+/**
+ * Returns the commercial train brand for a route (TER, TGV, MOBIGO, liO…).
+ * French feeds expose it via route_desc, the agency name, or the route's
+ * long name. Falls back to the generic route_type label.
+ */
+export function getTrainBrand(
+  route: GtfsRoute,
+  agencies: GtfsAgency[]
+): string {
+  const BRAND_KEYWORDS = [
+    "TGV", "INOUI", "OUIGO", "TER", "INTERCITÉS", "INTERCITES",
+    "TRANSILIEN", "RER", "EUROSTAR", "THALYS", "LYRIA", "MOBIGO",
+    "LIO", "FLUO", "ALEOP", "NOMAD", "REMI", "ZOU", "BREIZHGO",
+    "CARS RÉGION", "TRAIN",
+  ];
+
+  const sources: string[] = [];
+  if (route.route_desc?.trim()) sources.push(route.route_desc.trim());
+  const agency = agencies.find(
+    (a) => a.agency_id && a.agency_id === route.agency_id
+  ) ?? (agencies.length === 1 ? agencies[0] : undefined);
+  if (agency?.agency_name?.trim()) sources.push(agency.agency_name.trim());
+  if (route.route_long_name?.trim()) sources.push(route.route_long_name.trim());
+
+  for (const src of sources) {
+    const upper = src.toUpperCase();
+    for (const kw of BRAND_KEYWORDS) {
+      const idx = upper.indexOf(kw);
+      if (idx === -1) continue;
+      // Extract the keyword plus a short following qualifier (e.g. "TER BFC")
+      const rest = src.slice(idx, idx + kw.length + 24).split(/[,;\-–—(]/)[0].trim();
+      // Normalize case: keep known acronyms uppercased
+      const normalized = rest
+        .split(/\s+/)
+        .map((w) => {
+          const wu = w.toUpperCase();
+          if (BRAND_KEYWORDS.includes(wu)) return wu === "LIO" ? "liO" : wu;
+          return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+        })
+        .join(" ");
+      if (normalized) return normalized;
+    }
+  }
+
+  // Fallback: generic vehicle type from route_type
+  return getRouteTypeLabel(route);
 }
 
 export interface GtfsTrip {
@@ -133,6 +181,7 @@ export interface GtfsFileInfo {
 
 export interface GtfsData {
   routes: GtfsRoute[];
+  agencies: GtfsAgency[];
   trips: GtfsTrip[];
   stopTimes: GtfsStopTime[];
   stops: GtfsStop[];
@@ -181,7 +230,7 @@ export async function parseGtfsZip(file: File): Promise<GtfsData> {
     return entry.async("string");
   }
 
-  const [routesCSV, tripsCSV, stopTimesCSV, stopsCSV, calendarCSV, calDatesCSV, feedCSV] =
+  const [routesCSV, tripsCSV, stopTimesCSV, stopsCSV, calendarCSV, calDatesCSV, feedCSV, agencyCSV] =
     await Promise.all([
       read("routes.txt"),
       read("trips.txt"),
@@ -190,12 +239,14 @@ export async function parseGtfsZip(file: File): Promise<GtfsData> {
       read("calendar.txt"),
       read("calendar_dates.txt"),
       read("feed_info.txt"),
+      read("agency.txt"),
     ]);
 
   const feedRows = feedCSV ? parseCSV<GtfsFeedInfo>(feedCSV) : [];
 
   return {
     routes: routesCSV ? parseCSV<GtfsRoute>(routesCSV) : [],
+    agencies: agencyCSV ? parseCSV<GtfsAgency>(agencyCSV) : [],
     trips: tripsCSV ? parseCSV<GtfsTrip>(tripsCSV) : [],
     stopTimes: stopTimesCSV ? parseCSV<GtfsStopTime>(stopTimesCSV) : [],
     stops: stopsCSV ? parseCSV<GtfsStop>(stopsCSV) : [],
