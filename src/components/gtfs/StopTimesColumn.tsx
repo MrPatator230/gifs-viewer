@@ -221,6 +221,8 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
   const hasCalendarData =
     !!calendarInfo && (!!calendarInfo.cal || calendarInfo.calDates.length > 0);
 
+  const trainTypeLabel = route ? getRouteTypeLabel(route) : "";
+
   const platformAssignments = stopTimes
     .map((st, i) => ({
       seq: i + 1,
@@ -241,6 +243,16 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
               Détail
               {(() => { const n = getTripNumber(selectedTrip); return n ? ` — Train ${n}` : ""; })()}
             </h2>
+            {trainTypeLabel && (
+              <span
+                className="mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold text-white"
+                style={{ backgroundColor: routeColor }}
+                title="Type de train (route_type GTFS)"
+              >
+                <Train className="h-3 w-3" />
+                {trainTypeLabel}
+              </span>
+            )}
             {selectedTrip.trip_headsign && (
               <p className="truncate text-xs text-muted-foreground">{selectedTrip.trip_headsign}</p>
             )}
