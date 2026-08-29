@@ -7,6 +7,46 @@ export interface GtfsRoute {
   route_long_name: string;
   route_color: string;
   route_text_color: string;
+  route_type?: string;
+  route_desc?: string;
+}
+
+/** Maps a GTFS route_type code to a human-readable train type label. */
+export function getRouteTypeLabel(route: GtfsRoute): string {
+  const t = route.route_type?.trim();
+  const desc = route.route_desc?.trim();
+  const map: Record<string, string> = {
+    "0": "Tramway",
+    "1": "Métro",
+    "2": "Train",
+    "3": "Bus",
+    "4": "Ferry",
+    "5": "Téléphérique",
+    "6": "Téléphérique urbain",
+    "7": "Funiculaire",
+    "11": "Trolleybus",
+    "12": "Monorail",
+    // Extended GTFS route types
+    "100": "Train ferroviaire",
+    "101": "Train grande vitesse (TGV)",
+    "102": "Train longue distance (Intercités)",
+    "103": "Train régional (TER)",
+    "105": "Train de nuit",
+    "106": "Train régional (TER)",
+    "109": "Train suburbain (Transilien)",
+    "400": "Métro",
+    "700": "Bus",
+    "900": "Tramway",
+    "1000": "Transport fluvial",
+  };
+  if (t && map[t]) {
+    // Prefer a more specific route_desc if provided alongside a generic code
+    if (desc && (t === "2" || t === "100")) return desc;
+    return map[t];
+  }
+  if (desc) return desc;
+  if (t) return `Type ${t}`;
+  return "";
 }
 
 export interface GtfsTrip {

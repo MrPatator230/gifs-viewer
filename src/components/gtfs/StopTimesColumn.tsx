@@ -1,6 +1,6 @@
 import { useState, lazy, Suspense } from "react";
-import type { GtfsTrip, GtfsCalendar, GtfsCalendarDate, GtfsStopTime } from "@/lib/gtfs-parser";
-import { getStopPlatform, getTripNumber } from "@/lib/gtfs-parser";
+import type { GtfsTrip, GtfsRoute, GtfsCalendar, GtfsCalendarDate, GtfsStopTime } from "@/lib/gtfs-parser";
+import { getStopPlatform, getTripNumber, getRouteTypeLabel } from "@/lib/gtfs-parser";
 import { MapPin, Calendar, MessageSquare, Map as MapIcon, Train } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -25,6 +25,7 @@ interface Props {
   comment: string;
   onCommentChange: (comment: string) => void;
   routeColor: string;
+  route: GtfsRoute | null;
 }
 
 const DAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -187,7 +188,7 @@ function MiniCalendar({
   );
 }
 
-export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, comment, onCommentChange, routeColor }: Props) {
+export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, comment, onCommentChange, routeColor, route }: Props) {
   const [showCalendar, setShowCalendar] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [showPlatforms, setShowPlatforms] = useState(false);
@@ -220,6 +221,8 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
   const hasCalendarData =
     !!calendarInfo && (!!calendarInfo.cal || calendarInfo.calDates.length > 0);
 
+  const trainTypeLabel = route ? getRouteTypeLabel(route) : "";
+
   const platformAssignments = stopTimes
     .map((st, i) => ({
       seq: i + 1,
@@ -240,6 +243,16 @@ export function StopTimesColumn({ stopTimes, selectedTrip, days, calendarInfo, c
               Détail
               {(() => { const n = getTripNumber(selectedTrip); return n ? ` — Train ${n}` : ""; })()}
             </h2>
+            {trainTypeLabel && (
+              <span
+                className="mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold text-white"
+                style={{ backgroundColor: routeColor }}
+                title="Type de train (route_type GTFS)"
+              >
+                <Train className="h-3 w-3" />
+                {trainTypeLabel}
+              </span>
+            )}
             {selectedTrip.trip_headsign && (
               <p className="truncate text-xs text-muted-foreground">{selectedTrip.trip_headsign}</p>
             )}
