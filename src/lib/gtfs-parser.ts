@@ -181,6 +181,7 @@ export interface GtfsFileInfo {
 
 export interface GtfsData {
   routes: GtfsRoute[];
+  agencies: GtfsAgency[];
   trips: GtfsTrip[];
   stopTimes: GtfsStopTime[];
   stops: GtfsStop[];
@@ -229,7 +230,7 @@ export async function parseGtfsZip(file: File): Promise<GtfsData> {
     return entry.async("string");
   }
 
-  const [routesCSV, tripsCSV, stopTimesCSV, stopsCSV, calendarCSV, calDatesCSV, feedCSV] =
+  const [routesCSV, tripsCSV, stopTimesCSV, stopsCSV, calendarCSV, calDatesCSV, feedCSV, agencyCSV] =
     await Promise.all([
       read("routes.txt"),
       read("trips.txt"),
@@ -238,12 +239,14 @@ export async function parseGtfsZip(file: File): Promise<GtfsData> {
       read("calendar.txt"),
       read("calendar_dates.txt"),
       read("feed_info.txt"),
+      read("agency.txt"),
     ]);
 
   const feedRows = feedCSV ? parseCSV<GtfsFeedInfo>(feedCSV) : [];
 
   return {
     routes: routesCSV ? parseCSV<GtfsRoute>(routesCSV) : [],
+    agencies: agencyCSV ? parseCSV<GtfsAgency>(agencyCSV) : [],
     trips: tripsCSV ? parseCSV<GtfsTrip>(tripsCSV) : [],
     stopTimes: stopTimesCSV ? parseCSV<GtfsStopTime>(stopTimesCSV) : [],
     stops: stopsCSV ? parseCSV<GtfsStop>(stopsCSV) : [],
